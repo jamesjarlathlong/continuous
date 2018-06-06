@@ -9,7 +9,8 @@ import copy
 import json
 def get_maxq(Q, state):
     state_q = Q.get(stringify(state))
-    vals = state_q.
+    vals = state_q.values()
+    return max(vals) if vals else 0
 def get_maxq_action(Q, state, env):
     state_q = Q.get(stringify(state))
     return max(state_q, key=state_q.get) if state_q else env.action_space.sample()
@@ -17,6 +18,13 @@ def get_Q(Q, state, action):
     return Q.get(stringify(state),{}).get(action, 0)
 def stringify(state):
     return json.dumps(state)
+def update_Q(Q_old, state_old, action, reward, state_new, alpha):
+    Q = copy.deepcopy(Q_old)
+    old_q = get_Q(Q, state_old, action)
+    update = alpha*(reward + self.gamma * get_maxq(Q, state_new) - get_Q(Q, state_old, action))
+    #Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
+    Q[stringify(state_old)][action] = old_q+update
+    return Q
 class QLearner():
     def __init__(self,env, n_episodes=100, min_alpha=0.1,
                  min_epsilon=0.1, gamma=1.0, ada_divisor=25, max_env_steps=None,
@@ -34,10 +42,10 @@ class QLearner():
 
 
     def choose_action(self, state, epsilon):
-        return self.env.action_space.sample() if (np.random.random() <= epsilon) else np.argmax(self.Q[state])
+        return self.env.action_space.sample() if (np.random.random() <= epsilon) else get_maxq_action(self.Q, state, self.env)
 
     def update_q(self, state_old, action, reward, state_new, alpha):
-        self.Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
+        self.Q = update_q(state_old, action, reward, state_new, alpha)
 
     def get_epsilon(self, t):
         return max(self.min_epsilon, min(1, 1.0 - math.log10((t + 1) / self.ada_divisor)))
