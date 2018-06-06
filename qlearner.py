@@ -4,13 +4,17 @@ import gym
 import numpy as np
 import math
 from collections import deque
+import collections
+import copy
 import json
 def get_maxq(Q, state):
-    pass
-def get_maxq_action(Q, state):
-    pass
+    state_q = Q.get(stringify(state))
+    vals = state_q.
+def get_maxq_action(Q, state, env):
+    state_q = Q.get(stringify(state))
+    return max(state_q, key=state_q.get) if state_q else env.action_space.sample()
 def get_Q(Q, state, action):
-    pass
+    return Q.get(stringify(state),{}).get(action, 0)
 def stringify(state):
     return json.dumps(state)
 class QLearner():
@@ -26,7 +30,7 @@ class QLearner():
 
         self.env = env
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
-        self.Q = np.zeros((3,11,) + (2,3))
+        self.Q = collections.defaultdict(dict)
 
 
     def choose_action(self, state, epsilon):
