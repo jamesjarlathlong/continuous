@@ -15,7 +15,7 @@ def status_dynamics(status, battery, action):
         else:
             new_status = status#same as the old status
     elif action == 1:#go to sleep
-        new_status = 1
+        new_status = 1 if status==0 else status
     elif action == 2:#wakeup
         new_status = 0#awake
     if status == 1:
@@ -23,7 +23,7 @@ def status_dynamics(status, battery, action):
     return new_status
 def battery_dynamics(status, battery):
     if status == 2:#sleeping
-        new_battery = min(battery+1, 10)
+        new_battery = min(battery+1, 5)
     else:#either pre-sleep or awake
         new_battery = max(0, battery-1)
     return new_battery
@@ -49,7 +49,6 @@ class SensorEnv(gym.Env):
         reward = get_reward((status, battery))
         new_status = status_dynamics(status,battery, action)
         new_battery = battery_dynamics(status, battery)
-        print('new battery: ', new_battery)
         if new_battery == 0:
             done=True
         else: 
