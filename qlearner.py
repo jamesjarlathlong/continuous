@@ -66,7 +66,7 @@ class QLearner():
             i = 0
 
             while not done:
-                # self.env.render()
+                self.env.render()
                 action = self.choose_action(current_state, epsilon)
                 obs, reward, done, _ = self.env.step(action)
                 #print('action:{},state:{} reward:{}'.format(action, obs, reward))

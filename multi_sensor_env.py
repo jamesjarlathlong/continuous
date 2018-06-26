@@ -2,6 +2,12 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import sensor_env
+import random
+import string
+import json
+import os
+import csv
+import sqlite3
 def zip_dicts(statusd, battd):
     full_state = {k:(v, battd[k]) for k,v in statusd.items()}
     return full_state
@@ -29,9 +35,9 @@ class MultiSensorEnv(gym.Env):
         full_actions = {k:0 for k in self.state
                            if k != action_key}
         full_actions[action_key] = action_val
-        new_statuses = {k: sensor_env.status_dynamics(*v,full_actions[k])
+        new_statuses = {k: sensor_env.status_dynamics(v[0],v[1],full_actions[k])
                         for k,v in state.items()}
-        new_batteries = {k:sensor_env.battery_dynamics(*v) for
+        new_batteries = {k:sensor_env.battery_dynamics(v[0],v[1]) for
                          k, v in state.items()} 
         if min(new_batteries.values()) == 0:
             done=True
@@ -53,6 +59,10 @@ class TestSensorEnv(gym.Env):
                                                    spaces.Discrete(6)))
                                              })
         self.state = {'S0':(0,5)}
+        self.fname = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for _ in range(5))+'.json'
+        with open(self.fname, 'a+') as f:
+            json.dump({'data':[]},f)
+        self.record = []
         self.seed()
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -74,14 +84,26 @@ class TestSensorEnv(gym.Env):
                          k, v in state.items()} 
         if min(new_batteries.values()) == 0:
             done=True
-            print('DONE')
         else: 
             done=False
         new_state = zip_dicts(new_statuses, new_batteries)
-        print('actions: {}, old:{}, new:{}'.format(full_actions, state, new_state))
         self.state= new_state
         return new_state, reward, done, {}
     def reset(self):
         reset_state = {'S0':(0,5)}
         self.state = reset_state
+        with open(self.fname, 'r') as f:
+            previous = json.load(f)
+        if len(previous['data'])>3:
+            previous['data'].pop(0)
+        previous['data'].append(self.record)
+        with open(self.fname, 'w') as f:
+            json.dump(previous,f)
+        self.record = []
         return reset_state
+    def render(self):
+        self.record.append(self.state)
+
+
+
+
