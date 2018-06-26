@@ -30,9 +30,9 @@ class MultiSensorEnv(gym.Env):
                            if k != action_key}
         full_actions[action_key] = action_val
         
-        new_statuses = {k: sensor_env.status_dynamics(*v,full_actions[k])
+        new_statuses = {k: sensor_env.status_dynamics(v[0],v[1],full_actions[k])
                         for k,v in state.items()}
-        new_batteries = {k:sensor_env.battery_dynamics(*v) for
+        new_batteries = {k:sensor_env.battery_dynamics(v[0],v[1]) for
                          k, v in state.items()} 
         if min(new_batteries.values()) == 0:
             done=True
