@@ -8,7 +8,7 @@ import collections
 import copy
 import json
 def get_maxq(Q, state):
-    state_q = Q.get(stringify(state))
+    state_q = Q.get(stringify(state),{})
     vals = state_q.values()
     return max(vals) if vals else 0
 def get_maxq_action(Q, state, env):
@@ -18,10 +18,10 @@ def get_Q(Q, state, action):
     return Q.get(stringify(state),{}).get(action, 0)
 def stringify(state):
     return json.dumps(state)
-def update_Q(Q_old, state_old, action, reward, state_new, alpha):
+def update_q(Q_old, state_old, action, reward, state_new, alpha, gamma):
     Q = copy.deepcopy(Q_old)
     old_q = get_Q(Q, state_old, action)
-    update = alpha*(reward + self.gamma * get_maxq(Q, state_new) - get_Q(Q, state_old, action))
+    update = alpha*(reward + gamma * get_maxq(Q, state_new) - get_Q(Q, state_old, action))
     #Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
     Q[stringify(state_old)][action] = old_q+update
     return Q
@@ -45,7 +45,7 @@ class QLearner():
         return self.env.action_space.sample() if (np.random.random() <= epsilon) else get_maxq_action(self.Q, state, self.env)
 
     def update_q(self, state_old, action, reward, state_new, alpha):
-        self.Q = update_q(state_old, action, reward, state_new, alpha)
+        self.Q = update_q(self.Q, state_old, action, reward, state_new, alpha, self.gamma)
 
     def get_epsilon(self, t):
         return max(self.min_epsilon, min(1, 1.0 - math.log10((t + 1) / self.ada_divisor)))
@@ -57,9 +57,9 @@ class QLearner():
         scores = deque(maxlen=100)
 
         for e in range(self.n_episodes):
-            print('#######New episode#############')
+            #print('#######New episode#############')
             current_state = self.env.reset()
-            print('current state: {}'.format(current_state))
+            #print('current state: {}'.format(current_state))
             alpha = self.get_alpha(e)
             epsilon = self.get_epsilon(e)
             done = False
@@ -69,7 +69,7 @@ class QLearner():
                 # self.env.render()
                 action = self.choose_action(current_state, epsilon)
                 obs, reward, done, _ = self.env.step(action)
-                print('action:{},state:{} reward:{}'.format(action, obs, reward))
+                #print('action:{},state:{} reward:{}'.format(action, obs, reward))
                 new_state = obs
                 self.update_q(current_state, action, reward, new_state, alpha)
                 current_state = new_state
@@ -79,7 +79,7 @@ class QLearner():
             mean_score = np.mean(scores)
             if e % 100 == 0 and not self.quiet:
                 print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
-
+                #print('Q: ', self.Q)
         if not self.quiet: print('Did not solve after {} episodes 😞'.format(e))
         return e
 
