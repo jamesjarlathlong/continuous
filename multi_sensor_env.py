@@ -8,9 +8,11 @@ import json
 import os
 import csv
 import sqlite3
+import functools
 def zip_dicts(statusd, battd):
     full_state = {k:(v, battd[k]) for k,v in statusd.items()}
     return full_state
+batt_evolution = functools.partial(sensor_env.battery_dynamics,10)
 def get_new_state(old_state, action):
     action_num,action_val = action
     action_key = 'S'+str(action_num)
@@ -21,7 +23,7 @@ def get_new_state(old_state, action):
 
     new_statuses = {k: sensor_env.status_dynamics(v[0],v[1],full_actions[k])
                         for k,v in old_state.items()}
-    new_batteries = {k:sensor_env.battery_dynamics(v[0],v[1]) for
+    new_batteries = {k:batt_evolution(v[0],v[1]) for
                          k, v in old_state.items()} 
     new_state = zip_dicts(new_statuses, new_batteries)
     return new_state

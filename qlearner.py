@@ -21,7 +21,7 @@ def stringify(state):
     s = json.dumps(sorted(state.items()))
     return s
 def update_q(Q_old, state_old, action, reward, state_new, alpha, gamma):
-    Q = copy.deepcopy(Q_old)
+    Q = Q_old#copy.deepcopy(Q_old)
     old_q = get_Q(Q, state_old, action)
     update = alpha*(reward + gamma * get_maxq(Q, state_new) - get_Q(Q, state_old, action))
     #Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
@@ -82,7 +82,7 @@ class QLearner():
             rewards.append(r)
             mean_score = np.mean(scores)
             mean_reward = np.mean(rewards)
-            if e % 10 == 0 and not self.quiet:
+            if e % 1 == 0 and not self.quiet:
                 print('[Episode {}] - Mean survival time over last 10 episodes was {} ticks,{}.'.format(e, mean_score, mean_reward))
                 #print('Q: ', self.Q)
         if not self.quiet: print('Did not solve after {} episodes 😞'.format(e))

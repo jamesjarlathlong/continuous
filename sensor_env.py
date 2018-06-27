@@ -21,9 +21,9 @@ def status_dynamics(status, battery, action):
     if status == 1:
         new_status = 2
     return new_status
-def battery_dynamics(status, battery):
+def battery_dynamics(maxbatt, status, battery):
     if status == 2:#sleeping
-        new_battery = min(battery+1, 10)
+        new_battery = min(battery+1, maxbatt)
     else:#either pre-sleep or awake
         new_battery = max(0, battery-1)
     return new_battery

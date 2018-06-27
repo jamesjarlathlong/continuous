@@ -37,7 +37,7 @@ var listlike = function(arr){
     })
 }
 var fname = './'+exp+'.json'
-fname ="./gnyvr.json"
+fname ="./tmydt.json"
 readTextFile(fname, function(text){
 	var data  = JSON.parse(text).data
 	var first = data.slice(-1)[0]
@@ -49,6 +49,7 @@ readTextFile(fname, function(text){
 	var traces = split.map(function(el, idx, arr){
 		return {x:el.map(function(el,idx){return idx})
 			   ,y:el
+               ,line: {shape: 'vhv'}
 			   ,type:'scatter'}
 	})
     console.log(traces)
