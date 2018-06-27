@@ -7,6 +7,7 @@ from collections import deque
 import collections
 import copy
 import json
+import functools
 def get_maxq(Q, state):
     state_q = Q.get(stringify(state),{})
     vals = state_q.values()
@@ -17,7 +18,8 @@ def get_maxq_action(Q, state, env):
 def get_Q(Q, state, action):
     return Q.get(stringify(state),{}).get(action, 0)
 def stringify(state):
-    return json.dumps(state)
+    s = json.dumps(sorted(state.items()))
+    return s
 def update_q(Q_old, state_old, action, reward, state_new, alpha, gamma):
     Q = copy.deepcopy(Q_old)
     old_q = get_Q(Q, state_old, action)
@@ -55,20 +57,21 @@ class QLearner():
 
     def run(self):
         scores = deque(maxlen=100)
-
+        rewards = deque(maxlen=100)
         for e in range(self.n_episodes):
-            #print('#######New episode#############')
+            print('#######New episode#############')
             current_state = self.env.reset()
             #print('current state: {}'.format(current_state))
             alpha = self.get_alpha(e)
             epsilon = self.get_epsilon(e)
             done = False
             i = 0
-
-            while not done:
+            r =0
+            while not done and i<self.env._max_episode_steps:
                 self.env.render()
                 action = self.choose_action(current_state, epsilon)
                 obs, reward, done, _ = self.env.step(action)
+                r+=reward
                 #print('action:{},state:{} reward:{}'.format(action, obs, reward))
                 new_state = obs
                 self.update_q(current_state, action, reward, new_state, alpha)
@@ -76,9 +79,11 @@ class QLearner():
                 i += 1
 
             scores.append(i)
+            rewards.append(r)
             mean_score = np.mean(scores)
-            if e % 100 == 0 and not self.quiet:
-                print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
+            mean_reward = np.mean(rewards)
+            if e % 10 == 0 and not self.quiet:
+                print('[Episode {}] - Mean survival time over last 10 episodes was {} ticks,{}.'.format(e, mean_score, mean_reward))
                 #print('Q: ', self.Q)
         if not self.quiet: print('Did not solve after {} episodes 😞'.format(e))
         return e

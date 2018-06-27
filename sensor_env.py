@@ -3,7 +3,7 @@ from gym import spaces
 from gym.utils import seeding
 def get_reward(state):
     status, battery = state
-    if status == 0 and battery>0:
+    if status in [0,1] and battery>0:
         reward = 1
     else:
         reward = 0
@@ -23,7 +23,7 @@ def status_dynamics(status, battery, action):
     return new_status
 def battery_dynamics(status, battery):
     if status == 2:#sleeping
-        new_battery = min(battery+1, 5)
+        new_battery = min(battery+1, 10)
     else:#either pre-sleep or awake
         new_battery = max(0, battery-1)
     return new_battery

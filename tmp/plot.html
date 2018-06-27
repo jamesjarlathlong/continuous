@@ -1,5 +1,7 @@
 <html>
 <head>
+<meta charset="utf-8"/>
+
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 </head>
@@ -10,6 +12,9 @@
 
 
 <script>
+var urlParams = new URLSearchParams(window.location.search);
+var exp = urlParams.get('experiment')
+console.log('exp: ', exp)
 function readTextFile(file, callback) {
         var rawFile = new XMLHttpRequest();
         rawFile.overrideMimeType("application/json");
@@ -21,14 +26,32 @@ function readTextFile(file, callback) {
         }
     rawFile.send(null);
     }
-readTextFile('./qypqt.json', function(text){
+var red = function(accum, currentval){
+    currentval.forEach(function(el,idx){
+        accum[idx].push(el[1])
+    })
+    return accum}
+var listlike = function(arr){
+    return arr.map(function(el){
+        return []
+    })
+}
+var fname = './'+exp+'.json'
+fname ="./gnyvr.json"
+readTextFile(fname, function(text){
 	var data  = JSON.parse(text).data
-	var first = data.slice(-1)
-	var traces = first.map(function(el, idx, arr){
+	var first = data.slice(-1)[0]
+    var vals = first.map(function(el,idx,arr){
+        return Object.values(el)
+    })
+    var split = vals.reduce(red, listlike(vals[0]))
+    console.log('split: ', split)
+	var traces = split.map(function(el, idx, arr){
 		return {x:el.map(function(el,idx){return idx})
-			   ,y:el.map(function(el){return Object.values(el)[0][1]})
+			   ,y:el
 			   ,type:'scatter'}
 	})
+    console.log(traces)
 	Plotly.newPlot('myDiv', traces);
 })
 </script>
