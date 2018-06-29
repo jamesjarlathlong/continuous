@@ -10,6 +10,7 @@ import itertools
 import tensorflow as tf
 from pandas.io.json import json_normalize
 import fastpredict
+from gym.envs.registration import registry, register, make, spec
 def discount_rewards(gamma, r):
     """ take 1D float array of rewards and compute discounted reward """
     discounted_r = np.zeros_like(r)
@@ -46,6 +47,7 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
     dummy_state = env.reset()
     features = statelist_to_df([dummy_state])
     columns_feat = [tf.feature_column.numeric_column(key=i) for i in features.columns]
+    print(columns_feat)
     weight_column = tf.feature_column.numeric_column('weight')
     # Build 2 hidden layer DNN with 10, 10 units respectively.
     classifier = tf.estimator.DNNClassifier(
@@ -55,7 +57,7 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
         n_classes=num_actions,
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
-        hidden_units=[128,128],
+        hidden_units=[256,128],
         optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
@@ -75,19 +77,22 @@ def get_action(clf, state):
     #print('probs: ', state, probabilities, choice)
     return choice
 
-def generator_evaluation_fn(generator):
+def generator_evaluation_fn(featurenames,generator):
     """ Input function for numeric feature columns using the generator. """
     def _inner_input_fn():
         # set datatypes according to your data.
-        datatypes = tuple(2 * [tf.float32])
+        datatypes = tuple(len(featurenames) * [tf.float32])
         dataset = tf.data.Dataset().from_generator(generator, output_types=datatypes).batch(1)
         iterator = dataset.make_one_shot_iterator()
         features = iterator.get_next()
         # create a feature dictionary.
-        feature_dict = dict(zip(['S0.0', 'S0.1'], features))
+        feature_dict = dict(zip(featurenames, features))
         return feature_dict
     return _inner_input_fn
-
+def get_feature_names(env):
+    dummy_state = env.observation_space.sample()
+    features = statelist_to_df([dummy_state])
+    return list(features.columns)
 class PgLearner():
     def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, batch=1,max_env_steps=None):
         self.env = env
@@ -101,7 +106,10 @@ class PgLearner():
         self.modeldir = modeldir
     def run(self,render=True):
         clf = define_model(self.env, len(self.action_lookup), self.modeldir, learning_rate=self.learning_rate)
-        fastclf = fastpredict.FastPredict(clf,generator_evaluation_fn)
+        featurenames = get_feature_names(self.env)
+        print('f: ',featurenames)
+        genfn = functools.partial(generator_evaluation_fn, featurenames)
+        fastclf = fastpredict.FastPredict(clf,genfn)
         states,actions = [],[]
         rewards = np.empty(0).reshape(0,1)
         batch_rewards = []
@@ -136,11 +144,22 @@ class PgLearner():
             rewards = np.empty(0).reshape(0,1)
             # perform rmsprop parameter update every batch_size episodes
             if e % self.batch_size == 0:
+                print('#######Updating#############')
                 clf = update_model(clf, states, actions, batch_rewards)
-                fastclf = fastpredict.FastPredict(clf,generator_evaluation_fn)
+                fastclf = fastpredict.FastPredict(clf,genfn)
                 states, actions, batch_rewards = [],[],[] # reset array memory
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
             print('resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward))
         return e
+
+if __name__=='__main__':
+    register(
+    id='MultiSensor-v0',
+    entry_point='multi_sensor_env:MultiSensorEnv',
+    )
+    env = gym.make('MultiSensor-v0')
+    pgagent = PgLearner(env, learning_rate = 1e-3, n_episodes=2000,gamma=0.99,
+                              modeldir='tmp/faster', batch=5,max_env_steps=200)
+    pgagent.run()
 

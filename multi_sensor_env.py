@@ -12,7 +12,7 @@ import functools
 def zip_dicts(statusd, battd):
     full_state = {k:(v, battd[k]) for k,v in statusd.items()}
     return full_state
-batt_evolution = functools.partial(sensor_env.battery_dynamics,5)
+batt_evolution = functools.partial(sensor_env.battery_dynamics,10)
 def get_new_state(old_state, action):
     action_num,action_val = action
     action_key = 'S'+str(action_num)
