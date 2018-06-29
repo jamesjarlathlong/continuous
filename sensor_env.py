@@ -9,17 +9,13 @@ def get_reward(state):
         reward = 0
     return reward
 def status_dynamics(status, battery, action):
-    if action == 0:#noop
+    if action == 0:#wakeup
         if status == 1:#presleep
             new_status = 2#sleep
         else:
-            new_status = status#same as the old status
-    elif action == 1:#go to sleep
-        new_status = 1 if status==0 else status
-    elif action == 2:#wakeup
-        new_status = 0#awake
-    if status == 1:
-        new_status = 2
+            new_status = 0#awake
+    if action == 1:#go to sleep
+        new_status = min(status+1,2)
     return new_status
 def battery_dynamics(maxbatt, status, battery):
     if status == 2:#sleeping
