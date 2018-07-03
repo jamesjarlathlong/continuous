@@ -159,7 +159,7 @@ if __name__=='__main__':
     entry_point='multi_sensor_env:MultiSensorEnv',
     )
     env = gym.make('MultiSensor-v0')
-    pgagent = PgLearner(env, learning_rate = 1e-3, n_episodes=2000,gamma=0.99,
-                              modeldir='tmp/faster', batch=5,max_env_steps=200)
+    pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=5000,gamma=0.99,
+                              modeldir='tmp/conciseslow', batch=5,max_env_steps=200)
     pgagent.run()
 
