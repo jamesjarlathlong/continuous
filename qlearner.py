@@ -8,6 +8,8 @@ import collections
 import copy
 import json
 import functools
+from gym.envs.registration import registry, register, make, spec
+
 def get_maxq(Q, state):
     state_q = Q.get(stringify(state),{})
     vals = state_q.values()
@@ -88,7 +90,13 @@ class QLearner():
         if not self.quiet: print('Did not solve after {} episodes 😞'.format(e))
         return e
 
-if __name__ == "__main__":
-    solver = QLearner()
-    solver.run()
-# gym.upload('tmp/cartpole-1', api_key='')
+if __name__=='__main__':
+    register(
+    id='MultiSensor-v0',
+    entry_point='multi_sensor_env:MultiSensorEnv',
+    kwargs = {'num_sensors':4}
+    )
+    env = gym.make('MultiSensor-v0')
+    qagent = QLearner(env, n_episodes=10000, min_alpha=0.01, min_epsilon=0.01,
+                      ada_divisor=30, gamma=0.99,max_env_steps=200)
+    qagent.run()
