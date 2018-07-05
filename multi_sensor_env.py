@@ -37,14 +37,13 @@ def get_reward(old_state):
     #print('awake,{}, capable,{}'.format(awake_reward, capable_reward))
     return (awake_reward and capable_reward)
 class MultiSensorEnv(gym.Env):
-    def __init__(self):
-        self.action_space = spaces.Tuple((spaces.Discrete(2),spaces.Discrete(2)))
-        self.observation_space = spaces.Dict({'S0':spaces.Tuple((spaces.Discrete(3),
-                                                   spaces.Discrete(11)))
-                                             ,'S1':spaces.Tuple((spaces.Discrete(3),
-                                                   spaces.Discrete(11)))
-                                             })
-        self.state = {'S0':(0,10), 'S1':(0,10)}
+    def __init__(self, num_sensors=2):
+        self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
+        base_state = spaces.Tuple((spaces.Discrete(3),spaces.Discrete(11)))
+        obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
+        self.observation_space = spaces.Dict(obs_basis)
+        self.base_state = {k:(0,10) for k in obs_basis}
+        self.state = {k:(0,10) for k in obs_basis}
         self.fname = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for _ in range(5))+'.json'
         with open(self.fname, 'a+') as f:
             json.dump({'data':[]},f)
@@ -64,7 +63,7 @@ class MultiSensorEnv(gym.Env):
         self.state = new_state
         return new_state, reward, False, {}
     def reset(self):
-        reset_state = {'S0':(0,10), 'S1':(0,10)}
+        reset_state = self.base_state
         self.state = reset_state
         with open(self.fname, 'r') as f:
             previous = json.load(f)

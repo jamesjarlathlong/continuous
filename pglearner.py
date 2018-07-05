@@ -157,9 +157,10 @@ if __name__=='__main__':
     register(
     id='MultiSensor-v0',
     entry_point='multi_sensor_env:MultiSensorEnv',
+    kwargs = {'num_sensors':4}
     )
     env = gym.make('MultiSensor-v0')
-    pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=5000,gamma=0.99,
-                              modeldir='tmp/conciseslow', batch=5,max_env_steps=200)
+    pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=10000,gamma=0.99,
+                              modeldir='tmp/gpu', batch=10,max_env_steps=200)
     pgagent.run()
 
