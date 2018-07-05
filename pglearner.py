@@ -98,7 +98,7 @@ class PgLearner():
         self.env = env
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
-        print(self.action_lookup)
+        #print(self.action_lookup)
         self.learning_rate = learning_rate
         self.n_episodes = n_episodes
         self.gamma = gamma
@@ -107,7 +107,7 @@ class PgLearner():
     def run(self,render=True):
         clf = define_model(self.env, len(self.action_lookup), self.modeldir, learning_rate=self.learning_rate)
         featurenames = get_feature_names(self.env)
-        print('f: ',featurenames)
+        #print('f: ',featurenames)
         genfn = functools.partial(generator_evaluation_fn, featurenames)
         fastclf = fastpredict.FastPredict(clf,genfn)
         states,actions = [],[]
