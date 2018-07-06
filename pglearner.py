@@ -57,7 +57,7 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
         n_classes=num_actions,
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
-        hidden_units=[256,128],
+        hidden_units=[256,256],
         optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
@@ -118,7 +118,7 @@ class PgLearner():
         episode_number = 0
 
         for e in range(self.n_episodes):
-            print('#######New episode#############')
+            print('#######New episode## {}'.format(e))
             done=False
             observation = self.env.reset()
             reward_sum = 0
@@ -154,13 +154,15 @@ class PgLearner():
         return e
 
 if __name__=='__main__':
+    import os
+    #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     register(
     id='MultiSensor-v0',
     entry_point='multi_sensor_env:MultiSensorEnv',
-    kwargs = {'num_sensors':4}
+    kwargs = {'num_sensors':2}
     )
     env = gym.make('MultiSensor-v0')
     pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=10000,gamma=0.99,
-                              modeldir='tmp/gpu', batch=10,max_env_steps=200)
+                              modeldir='tmp/gpurepeat', batch=10,max_env_steps=200)
     pgagent.run()
 

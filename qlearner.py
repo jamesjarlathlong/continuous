@@ -97,6 +97,6 @@ if __name__=='__main__':
     kwargs = {'num_sensors':4}
     )
     env = gym.make('MultiSensor-v0')
-    qagent = QLearner(env, n_episodes=10000, min_alpha=0.01, min_epsilon=0.01,
-                      ada_divisor=100, gamma=0.99,max_env_steps=200)
+    qagent = QLearner(env, n_episodes=15000, min_alpha=0.02, min_epsilon=0.02,
+                      ada_divisor=50, gamma=0.99,max_env_steps=200)
     qagent.run()
