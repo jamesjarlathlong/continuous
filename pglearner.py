@@ -58,7 +58,7 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
         hidden_units=[256,128],
-        optimizer=tf.train.AdamOptimizer(
+        optimizer=tf.train.AdagradOptimizer(
           learning_rate=learning_rate,
         ))
     classifier = update_model(classifier, [dummy_state],[0],[1])
@@ -118,7 +118,7 @@ class PgLearner():
         episode_number = 0
 
         for e in range(self.n_episodes):
-            print('#######New episode#############')
+            print('#New episode##{}'.format(e))
             done=False
             observation = self.env.reset()
             reward_sum = 0

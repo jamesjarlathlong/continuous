@@ -74,7 +74,7 @@ class QLearner():
                 action = self.choose_action(current_state, epsilon)
                 obs, reward, done, _ = self.env.step(action)
                 r+=reward
-                #print('action:{},state:{} reward:{}'.format(action, obs, reward))
+                #print('previous:{}. action:{},next:{} reward:{}'.format(current_state, action, obs, reward))
                 new_state = obs
                 self.update_q(current_state, action, reward, new_state, alpha)
                 current_state = new_state
@@ -98,5 +98,5 @@ if __name__=='__main__':
     )
     env = gym.make('MultiSensor-v0')
     qagent = QLearner(env, n_episodes=10000, min_alpha=0.01, min_epsilon=0.01,
-                      ada_divisor=100, gamma=0.99,max_env_steps=200)
+                      ada_divisor=30, gamma=0.95,max_env_steps=200)
     qagent.run()
