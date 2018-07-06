@@ -54,7 +54,7 @@ class DDQNAgent:
         act_values = self.model.predict(state)
         return np.argmax(act_values[0])  # returns action
     def replay(self, batch_size):
-        minibatch = random.sample(self.memory, batch_size)
+        minibatch = random.sample(list(self.memory), batch_size)
         for state, action, reward, next_state, done in minibatch:
             target = reward
             if not done:
@@ -86,8 +86,10 @@ class DDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
+                if len(agent.memory) > 32:
+                    agent.replay(32)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
-            agent.replay(32)
+            #agent.replay(32)
             agent.update_target_model()
         return e
 
