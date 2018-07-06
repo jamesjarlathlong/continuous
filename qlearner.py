@@ -16,9 +16,11 @@ def get_maxq(Q, state):
     return max(vals) if vals else 0
 def get_maxq_action(Q, state, env):
     state_q = Q.get(stringify(state))
-    return max(state_q, key=state_q.get) if state_q else env.action_space.sample()
+    return json.loads(max(state_q, key=state_q.get)) if state_q else env.action_space.sample()
+def stringaction(action):
+    return json.dumps(action)
 def get_Q(Q, state, action):
-    return Q.get(stringify(state),{}).get(action, 0)
+    return Q.get(stringify(state),{}).get(stringaction(action), 0)
 def stringify(state):
     s = json.dumps(sorted(state.items()))
     return s
@@ -27,12 +29,12 @@ def update_q(Q_old, state_old, action, reward, state_new, alpha, gamma):
     old_q = get_Q(Q, state_old, action)
     update = alpha*(reward + gamma * get_maxq(Q, state_new) - get_Q(Q, state_old, action))
     #Q[state_old][action] += alpha * (reward + self.gamma * np.max(self.Q[state_new]) - self.Q[state_old][action])
-    Q[stringify(state_old)][action] = old_q+update
+    Q[stringify(state_old)][stringaction(action)] = old_q+update
     return Q
 class QLearner():
     def __init__(self,env, n_episodes=100, min_alpha=0.1,
                  min_epsilon=0.1, gamma=1.0, ada_divisor=25, max_env_steps=None,
-                 quiet=False):
+                 quiet=False, model_dir=None):
         self.n_episodes = n_episodes # training episodes 
         self.min_alpha = min_alpha # learning rate
         self.min_epsilon = min_epsilon # exploration rate
@@ -42,7 +44,19 @@ class QLearner():
 
         self.env = env
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
-        self.Q = collections.defaultdict(dict)
+        if model_dir:
+            self.model_dir = model_dir
+            try:
+                with open(model_dir, 'r') as f:
+                    d = json.load(f)
+                    print('loaded')
+                    self.Q = collections.defaultdict(dict, d)
+            except Exception as e:
+                print(e)
+                with open(model_dir, 'w') as f:
+                    self.Q = collections.defaultdict(dict)
+        else:
+            self.Q = collections.defaultdict(dict)
 
 
     def choose_action(self, state, epsilon):
@@ -74,7 +88,6 @@ class QLearner():
                 action = self.choose_action(current_state, epsilon)
                 obs, reward, done, _ = self.env.step(action)
                 r+=reward
-                #print('previous:{}. action:{},next:{} reward:{}'.format(current_state, action, obs, reward))
                 new_state = obs
                 self.update_q(current_state, action, reward, new_state, alpha)
                 current_state = new_state
@@ -87,7 +100,11 @@ class QLearner():
             if e % 1 == 0 and not self.quiet:
                 print('[Episode {}] - Mean survival time over last 10 episodes was {} ticks,{}.'.format(e, mean_score, mean_reward))
                 #print('Q: ', self.Q)
-        if not self.quiet: print('Did not solve after {} episodes 😞'.format(e))
+        if not self.quiet: print('Did not solve after {} episodes '.format(e))
+        if self.model_dir:
+            with open(self.model_dir, 'w') as f:
+                print('saving:',self.model_dir)
+                json.dump(self.Q,f)
         return e
 
 if __name__=='__main__':

@@ -57,8 +57,8 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
         n_classes=num_actions,
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
-        hidden_units=[256,128],
-        optimizer=tf.train.AdagradOptimizer(
+        hidden_units=[32,32],
+        optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
     classifier = update_model(classifier, [dummy_state],[0],[1])
@@ -157,10 +157,10 @@ if __name__=='__main__':
     register(
     id='MultiSensor-v0',
     entry_point='multi_sensor_env:MultiSensorEnv',
-    kwargs = {'num_sensors':4}
+    kwargs={'num_sensors':4}
     )
     env = gym.make('MultiSensor-v0')
-    pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=10000,gamma=0.99,
-                              modeldir='tmp/gpu', batch=10,max_env_steps=200)
+    pgagent = PgLearner(env, learning_rate = 1e-4, n_episodes=5000,gamma=0.99,
+                              modeldir='tmp/small', batch=5,max_env_steps=200)
     pgagent.run()
 
