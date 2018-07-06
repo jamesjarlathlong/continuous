@@ -95,11 +95,15 @@ class DDQNAgent:
 
 if __name__ == "__main__":
     # initialize gym environment and the agent
+    import sys
+    nepisodes = int(sys.argv[1])
+    fname = sys.argv[2]
     register(
     id='MultiSensor-v0',
     entry_point='multi_sensor_env:MultiSensorEnv',
     kwargs = {'num_sensors':4}
     )
     env = gym.make('MultiSensor-v0')
-    agent = DDQNAgent(env,n_episodes = 5000, max_env_steps=200)
+    agent = DDQNAgent(env,n_episodes = nepisodes, max_env_steps=200)
     agent.run()
+    agent.model.save('tmp/{}'.format(fname))
