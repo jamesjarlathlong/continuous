@@ -25,7 +25,7 @@ def get_solar(fname, year, lat, lon, leap_year, interval,
 	df = pd.read_csv(fmatted_url,skiprows=2)
 	df = df.set_index(pd.date_range('1/1/{yr}'.format(yr=year), freq=interval+'Min', periods=525600/int(interval)))
 	df.to_csv(fname+'.csv')
-	with open(fname+'.metadata.json', 'a+') as f:
+	with open(fname+'.metadata.json', 'w') as f:
 		json.dump({k:str(v) for k,v in metadata.items()}, f)
 	return metadata, df
 
@@ -53,38 +53,40 @@ def convert_to_energy(metadata, df):
 	ssc.data_set_table(dat, 'solar_resource_data', wfd)
 	ssc.data_free(wfd)
 	# Specify the system Configuration
-	# Set system capacity in MW
-	system_capacity = 4
+	# Set system capacity in kW
+	system_capacity = 2e-3
 	ssc.data_set_number(dat, 'system_capacity', system_capacity)
 	# Set DC/AC ratio (or power ratio). See https://sam.nrel.gov/sites/default/files/content/virtual_conf_july_2013/07-sam-virtual-conference-2013-woodcock.pdf
-	ssc.data_set_number(dat, 'dc_ac_ratio', 1.1)
+	ssc.data_set_number(dat, 'dc_ac_ratio', 1.0)
 	# Set tilt of system in degrees
-	ssc.data_set_number(dat, 'tilt', 25)
+	ssc.data_set_number(dat, 'tilt', 0)
 	# Set azimuth angle (in degrees) from north (0 degrees)
-	ssc.data_set_number(dat, 'azimuth', 180)
+	ssc.data_set_number(dat, 'azimuth', 180)#i.e. south
 	# Set the inverter efficency
-	ssc.data_set_number(dat, 'inv_eff', 96)
+	ssc.data_set_number(dat, 'inv_eff', 99)
 	# Set the system losses, in percent
 	ssc.data_set_number(dat, 'losses', 14.0757)
 	# Specify fixed tilt system (0=Fixed, 1=Fixed Roof, 2=1 Axis Tracker, 3=Backtracted, 4=2 Axis Tracker)
 	ssc.data_set_number(dat, 'array_type', 0)
 	# Set ground coverage ratio
-	ssc.data_set_number(dat, 'gcr', 0.4)
+	ssc.data_set_number(dat, 'gcr', 1.0)
 	# Set constant loss adjustment
 	ssc.data_set_number(dat, 'adjust:constant', 0)
 	# execute and put generation results back into dataframe
 	mod = ssc.module_create('pvwattsv5')
 	ssc.module_exec(mod, dat)
 	generation = np.array(ssc.data_get_array(dat, 'gen'))
-	dcnet = np.array(ssc.data_get_array(dat, 'hourly_dc_net'))
+	dcnet = np.array(ssc.data_get_array(dat, 'dc'))
+	ac = np.array(ssc.data_get_array(dat, 'ac'))
 	# free the memory
 	ssc.data_free(dat)
 	ssc.module_free(mod)
-	return generation, dcnet
+	return generation, dcnet, ac
 
 if __name__ == '__main__':
 	api_key = os.environ.get('NREL')
-	lat, lon= 42.3583452, -71.0937524
+	#lat, lon= 42.3583452, -71.0937524
+	lat, lon= 42.3683452, -71.0957524
 	# Set the attributes to extract (e.g., dhi, ghi, etc.), separated by commas.
 	attributes = 'ghi,dhi,dni,wind_speed_10m_nwp,surface_air_temperature_nwp,solar_zenith_angle'
 	# Choose year of data
