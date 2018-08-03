@@ -24,12 +24,12 @@ def get_solar(fname, year, lat, lon, leap_year, interval,
 	print('metadata: ', metadata)
 	df = pd.read_csv(fmatted_url,skiprows=2)
 	df = df.set_index(pd.date_range('1/1/{yr}'.format(yr=year), freq=interval+'Min', periods=525600/int(interval)))
-	df.to_csv(fname+'.csv')
+	df.to_pickle(fname+'.pkl')
 	with open(fname+'.metadata.json', 'w') as f:
 		json.dump({k:str(v) for k,v in metadata.items()}, f)
 	return metadata, df
 
-def convert_to_energy(metadata, df):
+def convert_to_energy(cell_properties, metadata, df):
 	ssc_lib = os.environ.get('LD_LIBRARY_PATH')
 	ssc = PySSC(ssc_lib)
 	# Resource inputs for SAM model:
@@ -47,21 +47,19 @@ def convert_to_energy(metadata, df):
 	ssc.data_set_array(wfd, 'df', df['DHI'])
 	ssc.data_set_array(wfd, 'wspd', df['Wind Speed'])
 	ssc.data_set_array(wfd, 'tdry', df['Temperature'])
-
 	# Create SAM compliant object  
 	dat = ssc.data_create()
 	ssc.data_set_table(dat, 'solar_resource_data', wfd)
 	ssc.data_free(wfd)
 	# Specify the system Configuration
 	# Set system capacity in kW
-	system_capacity = 2e-3
-	ssc.data_set_number(dat, 'system_capacity', system_capacity)
+	ssc.data_set_number(dat, 'system_capacity', cell_properties['system_capacity'])
 	# Set DC/AC ratio (or power ratio). See https://sam.nrel.gov/sites/default/files/content/virtual_conf_july_2013/07-sam-virtual-conference-2013-woodcock.pdf
-	ssc.data_set_number(dat, 'dc_ac_ratio', 1.0)
+	ssc.data_set_number(dat, 'dc_ac_ratio',1.0)
 	# Set tilt of system in degrees
-	ssc.data_set_number(dat, 'tilt', 0)
+	ssc.data_set_number(dat, 'tilt', cell_properties['tilt'])
 	# Set azimuth angle (in degrees) from north (0 degrees)
-	ssc.data_set_number(dat, 'azimuth', 180)#i.e. south
+	ssc.data_set_number(dat, 'azimuth', cell_properties['azimuth'])#i.e. south
 	# Set the inverter efficency
 	ssc.data_set_number(dat, 'inv_eff', 99)
 	# Set the system losses, in percent
@@ -116,7 +114,8 @@ if __name__ == '__main__':
 			utc=utc, your_name=your_name, your_email=your_email,
 			mailing_list=mailing_list, your_affiliation=your_affiliation,
 			reason_for_use=reason_for_use, api_key=api_key, attributes=attributes)
-	gen = convert_to_energy(meta, df)
+	cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
+	gen = convert_to_energy(cell_properties, meta, df)
 	print(gen)
 	"""
 	df = pd.read_csv(fmatted_url,skiprows=1)
