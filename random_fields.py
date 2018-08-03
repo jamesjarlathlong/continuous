@@ -33,6 +33,23 @@ def gaussian_proc(psd_fun, size=1024, scale =1):
     for i,kx in enumerate(fftIndgen(size)):
         amplitude[i] = psd_fun(kx)
     return np.fft.ifft(noise*amplitude)
+def form_spectrum(psd_fun,size):
+    amplitude = np.zeros(size)
+    for i,kx in enumerate(fftIndgen(size)):
+        amplitude[i] = psd_fun(kx)
+    return amplitude
+def gpu_gaussian_proc(psd_fun, size = 1024, scale = 1):
+    amplitude = tf.constant(form_spectrum(psd_fun,size), dtype = tf.float32)
+    zeros = tf.zeros(size, dtype=tf.float32)
+    complex_amplitude =tf.complex(amplitude, zeros)
+    random_noise = tf.random_normal(shape=(size,), stddev=scale, dtype=tf.float32)
+    complex_noise = tf.complex(random_noise, zeros)
+    noise_spectrum = tf.fft(complex_noise)
+    convolved = tf.multiply(noise_spectrum, complex_amplitude)
+    simulation = tf.ifft(convolved)
+    with tf.Session() as sess:
+        result = sess.run(simulation)
+        return result
 @lru_cache()
 def form_spectral_matrix(size):
     sizex, sizey, sizez = size

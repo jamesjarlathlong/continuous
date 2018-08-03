@@ -29,11 +29,9 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, status, scaledba
     else:#either pre-sleep or awake
         used_power = (on_power*timeperiod*discharge_voltage)
     balance = added_power - used_power
-    print(battery,balance, battery+balance, battery_capacity)
     new_battery = min(battery+balance, battery_capacity)
     new_battery = max(new_battery,0)
-
-    print('added power in mWh: {}, used_power: {}, battery:{}, new_battery:{}'.format(added_power, used_power, battery, new_battery))
+    #print('added power in mWh: {}, used_power: {}, battery:{}, new_battery:{}'.format(added_power, used_power, battery, new_battery))
     normalised = new_battery*(maxbatt/battery_capacity)
     return int(round(normalised))
 def runner(reducingseries,f):
@@ -46,7 +44,7 @@ def slicer(wattage, start, duration):
     return list(itertools.islice(itertools.cycle(wattage), start, stop))
 def random_perturber(timeseries):
     psd_fun = functools.partial(random_fields.power_spectrum, 100)
-    perturbation = random_fields.gaussian_proc(psd_fun, size=len(timeseries), scale =2)
+    perturbation = random_fields.gpu_gaussian_proc(psd_fun, size=len(timeseries), scale =2)
     perturbation +=1 #perturbation around self value
     return np.multiply(timeseries, perturbation)
 def is_number(s):
