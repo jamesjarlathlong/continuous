@@ -15,6 +15,7 @@ import string
 import csv
 import sys
 import multi_sensor_env
+#850/2344 for simple q learning
 def battery_dynamics(generated_power,battery_capacity, maxbatt, status, scaledbattery):
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
@@ -58,7 +59,10 @@ def random_start_generator():
     deltat = 0.5#hours
     num_steps = 365*24/deltat
     return np.random.randint(0, num_steps)
-def get_new_state(batt_fun, battery_capacity, max_batt, old_state, action):
+def batt_diff(new_batt, old_batt):
+    return new_batt-old_batt
+def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
+    """batt_funs is a dictionary of battery functions"""
     action_num,action_val = action
     action_key = 'S'+str(action_num)
     #print('getting reward,{}:{}'.format(state, reward))
@@ -68,9 +72,10 @@ def get_new_state(batt_fun, battery_capacity, max_batt, old_state, action):
 
     new_statuses = {k: sensor_env.status_dynamics(v[0],v[1],full_actions[k])
                         for k,v in old_state.items()}
-    new_batteries = {k:batt_fun(battery_capacity, max_batt, v[0],v[1]) for
+    new_batteries = {k:batt_funs[k](battery_capacity, max_batt, v[0],v[1]) for
                          k, v in old_state.items()} 
-    new_state = multi_sensor_env.zip_dicts(new_statuses, new_batteries)
+    diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
+    new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
     return new_state
 class SolarSensorEnv(gym.Env):
     """Simple sleeping sensor environment
@@ -84,11 +89,14 @@ class SolarSensorEnv(gym.Env):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#200mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(1),spaces.Discrete(2)))
-        base_state = spaces.Tuple((spaces.Discrete(3),spaces.Discrete(max_batt+1)))
+        base_state = spaces.Tuple((spaces.Discrete(3),
+                                   spaces.Discrete(max_batt+1),
+                                   spaces.Discrete(max_batt+1)
+                                   ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.observation_space = spaces.Dict(obs_basis)
-        self.base_state = {k:(0,max_batt) for k in obs_basis}
-        self.state = {k:(0,max_batt) for k in obs_basis}
+        self.base_state = {k:(0,max_batt,0) for k in obs_basis}
+        self.state = self.base_state
         self.seed()
         cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
         df = pd.read_pickle('testing.pkl')
@@ -97,17 +105,23 @@ class SolarSensorEnv(gym.Env):
         generated, dcnet,acnet = solar_getter.convert_to_energy(cell_properties,meta, df)
         self.powerseries = dcnet
         #rendering 
-        self.fname = os.getcwd()+'/tmp/'+''.join(random.choice(string.ascii_lowercase) for _ in range(5))+'.json'
+        uq = ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+        self.fname = os.getcwd()+'/tmp/'+uq+'.json'
+        self.rewardfname = os.getcwd()+'/tmp/'+'reward'+uq+'.json'
         with open(self.fname, 'a+') as f:
             json.dump({'data':[]},f)
+        with open(self.rewardfname, 'a+') as f:
+            json.dump({'data':[]},f)
         self.record = []
+        self.rewards = []
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
-        reward = multi_sensor_env.get_reward(old_state)
+        reward = multi_sensor_env.get_reward({k: v[0:2] for k,v 
+                                             in old_state.items()})
         #print('getting reward,{}:{}'.format(state, reward))
         new_state = get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
@@ -116,14 +130,20 @@ class SolarSensorEnv(gym.Env):
         #    done=True
         #else: 
         self.state = new_state
+        self.reward = reward
         return new_state, reward, False, {}
     def reset(self):
         self.state = self.base_state
+        self.reward = 0
         randomstart = random_start_generator()
         currentslice = slicer(self.powerseries, randomstart, self._max_episode_steps)
-        randomly_perturbed = list(random_perturber(currentslice).real)
-        episode_battery_runner = functools.partial(runner, randomly_perturbed)
-        self.episode_battery_dynamics = episode_battery_runner(battery_dynamics)
+        randomly_perturbed = {k:list(random_perturber(currentslice).real)
+                              for k in self.state}
+        episode_battery_runners = {k:functools.partial(runner, v)
+                                  for k,v in randomly_perturbed.items()}
+        self.episode_battery_dynamics = {k: episode_battery_runner(battery_dynamics)
+                                         for k, episode_battery_runner 
+                                         in episode_battery_runners.items()}
         #write out record to file for inspection
         with open(self.fname, 'r') as f:
             previous = json.load(f)
@@ -133,6 +153,13 @@ class SolarSensorEnv(gym.Env):
         with open(self.fname, 'w') as f:
             json.dump(previous,f)
         self.record = []
+        with open(self.rewardfname, 'r') as f:
+            previous_rewards = json.load(f)
+        previous_rewards['data'].append(sum(self.rewards))
+        with open(self.rewardfname, 'w') as f:
+            json.dump(previous_rewards,f)
+        self.rewards = []
         return self.state
     def render(self):
         self.record.append(self.state)
+        self.rewards.append(self.reward)
