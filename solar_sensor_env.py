@@ -77,6 +77,16 @@ def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
     diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
     new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
     return new_state
+def might_not_exist_read(filename):
+    try:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError as e:
+        with open(filename, 'a+') as f:
+            data = {'data':[]}
+            json.dump(data,f)
+    return data
+
 class SolarSensorEnv(gym.Env):
     """Simple sleeping sensor environment
     Battery has 10 values, Status has 3 values
@@ -85,9 +95,9 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors):
+    def __init__(self, max_batt, num_sensors, solarfilename, recordname):
         self.max_batt = max_batt
-        self.battery_capacity = 2000*3.7#200mAh*3.7V
+        self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(1),spaces.Discrete(2)))
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Discrete(max_batt+1),
@@ -99,19 +109,15 @@ class SolarSensorEnv(gym.Env):
         self.state = self.base_state
         self.seed()
         cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
-        df = pd.read_pickle('testing.pkl')
-        with open('testing.metadata.json') as f:
+        df = pd.read_pickle(solarfilename+'.pkl')
+        with open(solarfilename+'.metadata.json') as f:
             meta = {k:converter(v) for k,v in json.load(f).items()}
         generated, dcnet,acnet = solar_getter.convert_to_energy(cell_properties,meta, df)
         self.powerseries = dcnet
         #rendering 
-        uq = ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+        uq = recordname
         self.fname = os.getcwd()+'/tmp/'+uq+'.json'
         self.rewardfname = os.getcwd()+'/tmp/'+'reward'+uq+'.json'
-        with open(self.fname, 'a+') as f:
-            json.dump({'data':[]},f)
-        with open(self.rewardfname, 'a+') as f:
-            json.dump({'data':[]},f)
         self.record = []
         self.rewards = []
     def seed(self, seed=None):
@@ -145,16 +151,14 @@ class SolarSensorEnv(gym.Env):
                                          for k, episode_battery_runner 
                                          in episode_battery_runners.items()}
         #write out record to file for inspection
-        with open(self.fname, 'r') as f:
-            previous = json.load(f)
+        previous = might_not_exist_read(self.fname)
         if len(previous['data'])>3:
             previous['data'].pop(0)
         previous['data'].append(self.record)
         with open(self.fname, 'w') as f:
             json.dump(previous,f)
         self.record = []
-        with open(self.rewardfname, 'r') as f:
-            previous_rewards = json.load(f)
+        previous_rewards = might_not_exist_read(self.rewardfname)
         previous_rewards['data'].append(sum(self.rewards))
         with open(self.rewardfname, 'w') as f:
             json.dump(previous_rewards,f)
