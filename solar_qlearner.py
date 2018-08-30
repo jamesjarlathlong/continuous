@@ -1,7 +1,8 @@
 import qlearner
 import gym
 from gym.envs.registration import registry, register, make, spec
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 if __name__=='__main__':
     register(
     id='SolarSensor-v0',
