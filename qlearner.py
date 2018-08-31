@@ -98,7 +98,7 @@ class QLearner():
             mean_score = np.mean(scores)
             mean_reward = np.mean(rewards)
             if e % 1 == 0 and not self.quiet:
-                print('[Episode {}] - Mean survival time over last 10 episodes was {} ticks,{}.'.format(e, mean_score, mean_reward))
+                print('[Episode {}] - Mean survival time over last 10 episodes was {} out of,{}.Most recent score {}'.format(e, mean_reward, mean_score, r))
                 #print('Q: ', self.Q)
         if not self.quiet: print('Did not solve after {} episodes '.format(e))
         if self.model_dir:
