@@ -1,4 +1,4 @@
-import qlearner
+import simple_agent
 import gym
 from gym.envs.registration import registry, register, make, spec
 import os
@@ -19,6 +19,5 @@ if __name__=='__main__':
     kwargs = {'max_batt':100,'num_sensors':1, 'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    qagent = qlearner.QLearner(env, n_episodes=10, min_alpha=0.01, min_epsilon=0.01,
-                      ada_divisor=30, gamma=0.95,max_env_steps=28*48, model_dir=modeldir)
-    qagent.run()
+    naiveagent = simple_agent.SimpleAgent(env, n_episodes = 100, max_env_steps = 28*48)
+    naiveagent.run()

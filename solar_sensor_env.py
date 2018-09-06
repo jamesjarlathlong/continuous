@@ -16,6 +16,14 @@ import csv
 import sys
 import multi_sensor_env
 #850/2344 for simple q learning
+def gaussian(x):
+    mu = 12
+    sig = 2
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+def emulate_sun():
+    nighttime = 12*[0.0]
+    daytime = [gaussian(0.5*i) for i in range(12,36)]
+    return nighttime+daytime+nighttime
 def battery_dynamics(generated_power,battery_capacity, maxbatt, status, scaledbattery):
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
@@ -86,7 +94,13 @@ def might_not_exist_read(filename):
             data = {'data':[]}
             json.dump(data,f)
     return data
-
+def get_generated_power(solarfilename):
+    cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
+    df = pd.read_pickle(solarfilename+'.pkl')
+    with open(solarfilename+'.metadata.json') as f:
+        meta = {k:converter(v) for k,v in json.load(f).items()}
+        generated, dcnet,acnet = solar_getter.convert_to_energy(cell_properties,meta, df)
+    return dcnet
 class SolarSensorEnv(gym.Env):
     """Simple sleeping sensor environment
     Battery has 10 values, Status has 3 values
@@ -95,7 +109,7 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors, solarfilename, recordname):
+    def __init__(self, max_batt, num_sensors, solarpowerrecord, recordname):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(1),spaces.Discrete(2)))
@@ -108,12 +122,7 @@ class SolarSensorEnv(gym.Env):
         self.base_state = {k:(0,max_batt,0) for k in obs_basis}
         self.state = self.base_state
         self.seed()
-        cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
-        df = pd.read_pickle(solarfilename+'.pkl')
-        with open(solarfilename+'.metadata.json') as f:
-            meta = {k:converter(v) for k,v in json.load(f).items()}
-        generated, dcnet,acnet = solar_getter.convert_to_energy(cell_properties,meta, df)
-        self.powerseries = dcnet
+        self.powerseries = solarpowerrecord
         #rendering 
         uq = recordname
         self.fname = os.getcwd()+'/tmp/'+uq+'.json'
