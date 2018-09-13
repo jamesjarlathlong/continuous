@@ -75,22 +75,22 @@ class DDQNAgent:
             i=0
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
-                action = agent.act(prev_state)
+                action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
                 next_state, reward, done, info = self.env.step(self.action_lookup[action])
                 flat_state = flatten_state(next_state)
                 # Remember the previous state, action, reward, and done
-                agent.remember(prev_state, action, reward, flat_state, done)
+                self.remember(prev_state, action, reward, flat_state, done)
                 # make next_state the new current state for the next frame.
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(agent.memory) > 32:
-                    agent.replay(32)
+                if len(self.memory) > 32:
+                    self.replay(32)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
-            agent.update_target_model()
+            self.update_target_model()
         return e
 
 if __name__ == "__main__":

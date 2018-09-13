@@ -31,8 +31,8 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, status, scaledba
     added_power =  generated_power*1000*timeperiod #mWh - generated is avg power in a timeperiod
     
     max_possible = battery_capacity*discharge_voltage #mAh e.g. 2000mAh times 3.7 volts = 7400mW 
-    on_power = 56+45+5#mAh
-    off_power = 0.5#mAh
+    on_power = 56+45+35#mAh pyboard plus digimesh plus accel
+    off_power = 45#mAh
     if status == 2:#sleeping
         used_power = (off_power*discharge_voltage*timeperiod)
     else:#either pre-sleep or awake
@@ -51,11 +51,14 @@ def runner(reducingseries,f):
 def slicer(wattage, start, duration):
     stop = start+duration
     return list(itertools.islice(itertools.cycle(wattage), start, stop))
-def random_perturber(timeseries):
+def random_perturber(num_sensors, timeseries):
     psd_fun = functools.partial(random_fields.power_spectrum, 100)
-    perturbation = random_fields.gpu_gaussian_proc(psd_fun, size=len(timeseries), scale =2)
-    perturbation +=1 #perturbation around self value
-    return np.multiply(timeseries, perturbation)
+    res = []
+    for _ in range(num_sensors):
+        perturbation = random_fields.gpu_gaussian_proc(psd_fun, size=len(timeseries), scale =150)
+        perturbation +=1 #perturbation around self value`
+        res.append(list(np.multiply(timeseries, perturbation).real))
+    return res
 def is_number(s):
     try:
         float(s)
@@ -95,12 +98,16 @@ def might_not_exist_read(filename):
             json.dump(data,f)
     return data
 def get_generated_power(solarfilename):
-    cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
+    cell_properties = {'system_capacity':2e-3 , 'azimuth':90 , 'tilt':20}
     df = pd.read_pickle(solarfilename+'.pkl')
     with open(solarfilename+'.metadata.json') as f:
         meta = {k:converter(v) for k,v in json.load(f).items()}
         generated, dcnet,acnet = solar_getter.convert_to_energy(cell_properties,meta, df)
     return dcnet
+def get_random_name():
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+def set_initial_status(sensornum):
+    return 0 if sensornum=='S0' else 2
 class SolarSensorEnv(gym.Env):
     """Simple sleeping sensor environment
     Battery has 10 values, Status has 3 values
@@ -109,17 +116,17 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors, solarpowerrecord, recordname):
+    def __init__(self, max_batt, num_sensors, solarpowerrecord, recordname=get_random_name()):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
-        self.action_space = spaces.Tuple((spaces.Discrete(1),spaces.Discrete(2)))
+        self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Discrete(max_batt+1),
                                    spaces.Discrete(max_batt+1)
                                    ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.observation_space = spaces.Dict(obs_basis)
-        self.base_state = {k:(0,max_batt,0) for k in obs_basis}
+        self.base_state = {k:(set_initial_status(k),max_batt,0) for k in obs_basis}
         self.state = self.base_state
         self.seed()
         self.powerseries = solarpowerrecord
@@ -152,8 +159,9 @@ class SolarSensorEnv(gym.Env):
         self.reward = 0
         randomstart = random_start_generator()
         currentslice = slicer(self.powerseries, randomstart, self._max_episode_steps)
-        randomly_perturbed = {k:list(random_perturber(currentslice).real)
-                              for k in self.state}
+        perturbed = random_perturber(len(self.state), currentslice)
+        randomly_perturbed = {k:perturbed[idx]
+                              for idx, k in enumerate(self.state)}
         episode_battery_runners = {k:functools.partial(runner, v)
                                   for k,v in randomly_perturbed.items()}
         self.episode_battery_dynamics = {k: episode_battery_runner(battery_dynamics)
