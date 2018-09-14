@@ -178,7 +178,7 @@ class SolarSensorEnv(gym.Env):
         previous_rewards = might_not_exist_read(self.rewardfname)
         previous_rewards['data'].append(sum(self.rewards))
         with open(self.rewardfname, 'w') as f:
-            print('reward: {}'.format(self.rewardname))
+            print('reward: {}'.format(self.rewardfname))
             json.dump(previous_rewards,f)
         self.rewards = []
         return self.state
