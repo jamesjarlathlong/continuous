@@ -66,12 +66,16 @@ def is_number(s):
     except ValueError:
         return False
 converter = lambda v: float(v) if is_number(v) else v
+def rounder(x, base=48):
+    return int(base * round(float(x)/base))
 def random_start_generator():
     deltat = 0.5#hours
     num_steps = 365*24/deltat
-    return np.random.randint(0, num_steps)
+    return rounder(np.random.randint(0, num_steps))
 def batt_diff(new_batt, old_batt):
     return new_batt-old_batt
+def new_time(time):
+    return time+1 if time<47 else 0
 def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
     """batt_funs is a dictionary of battery functions"""
     action_num,action_val = action
@@ -86,7 +90,8 @@ def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
     new_batteries = {k:batt_funs[k](battery_capacity, max_batt, v[0],v[1]) for
                          k, v in old_state.items()} 
     diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
-    new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
+    times = {k:new_time(v[3]) for k,v, in old_state.items()}
+    new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
     return new_state
 def might_not_exist_read(filename):
     try:
@@ -122,11 +127,12 @@ class SolarSensorEnv(gym.Env):
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Discrete(max_batt+1),
-                                   spaces.Discrete(max_batt+1)
+                                   spaces.Discrete(max_batt+1),
+                                   spaces.Discrete(48)
                                    ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.observation_space = spaces.Dict(obs_basis)
-        self.base_state = {k:(set_initial_status(k),max_batt,0) for k in obs_basis}
+        self.base_state = {k:(set_initial_status(k),max_batt,0,0) for k in obs_basis}
         self.state = self.base_state
         self.seed()
         self.powerseries = solarpowerrecord
