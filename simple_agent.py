@@ -13,10 +13,10 @@ class SimpleAgent(object):
         #recharge if battery gets below 3 
         # status 0: On 1: PreSleep 2: Sleep
         #print(observation)
-        status, battery, diff = observation['S0']
+        status, battery, diff, t = observation['S0']
         if battery<3:
             return wrap_action(0,1)#go to sleep
-        elif battery>self.env.max_batt-2:
+        elif battery>5:#self.env.max_batt-80:
             #print('maxed', self.env.max_batt, battery)
             return wrap_action(0,0)#wakeup
         else:
