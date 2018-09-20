@@ -59,6 +59,24 @@ def random_perturber(num_sensors, timeseries):
         perturbation +=1 #perturbation around self value`
         res.append(list(np.multiply(timeseries, perturbation).real))
     return res
+def get_sensor_perturbations(sensors, perturbation):
+    return [perturbation[round(i[0]),round(i[1]),:] for i in sensors]
+def add_noise(series):
+    noise = np.random.normal(0, 0.1, len(series))
+    return series+noise
+def full_perturber(sensors, timeseries):
+    threedperturbation = random_fields.gpu_gaussian_random_field(size=30,scale=2, length=1)
+    factors = get_sensor_perturbations(sensors, threedperturbation)
+    #print(factors)
+    #factors = [np.array([-0.25])]
+    res = []
+    for f in factors:
+        #print('FACTOR: ', f[0])
+        fullfactor = np.array([f[0] for _ in timeseries])
+        fullfactor+=1
+        res.append(list(add_noise(np.multiply(timeseries, fullfactor).real)))
+    return res
+
 def is_number(s):
     try:
         float(s)
@@ -113,6 +131,10 @@ def get_random_name():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
 def set_initial_status(sensornum):
     return 0 if sensornum=='S0' else 2
+def generate_random_coords(size):
+    return (np.random.uniform(0, size), np.random.uniform(0,size))
+def generate_network_coords(num_sensors, size=29):
+    return [generate_random_coords(size) for _ in range(num_sensors)]
 class SolarSensorEnv(gym.Env):
     """Simple sleeping sensor environment
     Battery has 10 values, Status has 3 values
@@ -131,6 +153,7 @@ class SolarSensorEnv(gym.Env):
                                    spaces.Discrete(48)
                                    ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
+        self.sensors = generate_network_coords(num_sensors)
         self.observation_space = spaces.Dict(obs_basis)
         self.base_state = {k:(set_initial_status(k),max_batt,0,0) for k in obs_basis}
         self.state = self.base_state
@@ -163,9 +186,10 @@ class SolarSensorEnv(gym.Env):
     def reset(self):
         self.state = self.base_state
         self.reward = 0
+        self.sensors = generate_network_coords(len(self.sensors))
         randomstart = random_start_generator()
         currentslice = slicer(self.powerseries, randomstart, self._max_episode_steps)
-        perturbed = random_perturber(len(self.state), currentslice)
+        perturbed = full_perturber(self.sensors, currentslice)
         randomly_perturbed = {k:perturbed[idx]
                               for idx, k in enumerate(self.state)}
         episode_battery_runners = {k:functools.partial(runner, v)
