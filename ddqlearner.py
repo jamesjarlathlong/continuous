@@ -5,8 +5,10 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.models import load_model
 import itertools
 import functools
+
 from gym.envs.registration import registry, register, make, spec
 # Deep Q-learning Agent
 def flatten_state(statedict):
@@ -17,7 +19,7 @@ def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
 class DDQNAgent:
-    def __init__(self, env,n_episodes, max_env_steps=None):
+    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state(env.observation_space.sample())[0])
@@ -25,20 +27,23 @@ class DDQNAgent:
         print(self.action_size, self.state_size)
         self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.95    # discount rate
+        self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.model = self._build_model()
+        if modeldir:
+            self.model = load_model(modeldir)
+        else:
+            self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(28, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(28, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
@@ -87,6 +92,7 @@ class DDQNAgent:
                 reward_sum += reward
                 i+=1
                 if len(self.memory) > 32:
+                    #print(i)
                     self.replay(32)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
