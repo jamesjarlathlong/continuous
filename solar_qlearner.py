@@ -19,9 +19,9 @@ if __name__=='__main__':
     register(
     id='SolarSensor-v0',
     entry_point='solar_sensor_env:SolarSensorEnv',
-    kwargs = {'max_batt':100,'num_sensors':1, 'solarpowerrecord':solarrecord, 'recordname':recordname}
+    kwargs = {'max_batt':100,'num_sensors':1,'deltat':3, 'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    qagent = qlearner.QLearner(env, n_episodes=1000, min_alpha=0.01, min_epsilon=0.01,
-                      ada_divisor=30, gamma=0.99,max_env_steps=28*48, model_dir=modeldir)
+    qagent = qlearner.QLearner(env, n_episodes=2000, min_alpha=0.01, min_epsilon=0.01,
+                      ada_divisor=30, gamma=0.99,max_env_steps=365*8, model_dir=modeldir)
     qagent.run()

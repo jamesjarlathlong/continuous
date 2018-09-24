@@ -24,10 +24,10 @@ def emulate_sun():
     nighttime = 12*[0.0]
     daytime = [gaussian(0.5*i) for i in range(12,36)]
     return nighttime+daytime+nighttime
-def battery_dynamics(generated_power,battery_capacity, maxbatt, status, scaledbattery):
+def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery):
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
-    timeperiod = 0.5 #hours
+    timeperiod = 48/max_t #hours
     added_power =  generated_power*1000*timeperiod #mWh - generated is avg power in a timeperiod
     
     max_possible = battery_capacity*discharge_voltage #mAh e.g. 2000mAh times 3.7 volts = 7400mW 
@@ -65,10 +65,10 @@ def add_noise(series):
     noise = np.random.normal(0, 0.1, len(series))
     return series+noise
 def full_perturber(sensors, timeseries):
-    threedperturbation = random_fields.gpu_gaussian_random_field(size=30,scale=2, length=1)
-    factors = get_sensor_perturbations(sensors, threedperturbation)
+    #threedperturbation = random_fields.gpu_gaussian_random_field(size=30,scale=2, length=1)
+    #factors = get_sensor_perturbations(sensors, threedperturbation)
     #print(factors)
-    #factors = [np.array([-0.25])]
+    factors = [np.array([0]) for _ in sensors]
     res = []
     for f in factors:
         #print('FACTOR: ', f[0])
@@ -86,15 +86,16 @@ def is_number(s):
 converter = lambda v: float(v) if is_number(v) else v
 def rounder(x, base=48):
     return int(base * round(float(x)/base))
-def random_start_generator():
-    deltat = 0.5#hours
-    num_steps = 365*24/deltat
-    return rounder(np.random.randint(0, num_steps))
+def random_start_generator(deltat):
+    #deltat = 0.5#hours
+    aday = 24/deltat
+    num_steps = 365*aday
+    return rounder(np.random.randint(0, num_steps), base=aday)
 def batt_diff(new_batt, old_batt):
     return new_batt-old_batt
-def new_time(time):
-    return time+1 if time<47 else 0
-def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
+def new_time(max_t, time):
+    return time+1 if time<(max_t-1) else 0
+def get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, action):
     """batt_funs is a dictionary of battery functions"""
     action_num,action_val = action
     action_key = 'S'+str(action_num)
@@ -105,10 +106,10 @@ def get_new_state(batt_funs, battery_capacity, max_batt, old_state, action):
 
     new_statuses = {k: sensor_env.status_dynamics(v[0],v[1],full_actions[k])
                         for k,v in old_state.items()}
-    new_batteries = {k:batt_funs[k](battery_capacity, max_batt, v[0],v[1]) for
+    new_batteries = {k:batt_funs[k](battery_capacity, max_batt, max_t, v[0],v[1]) for
                          k, v in old_state.items()} 
     diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
-    times = {k:new_time(v[3]) for k,v, in old_state.items()}
+    times = {k:new_time(max_t, v[3]) for k,v, in old_state.items()}
     new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
     return new_state
 def might_not_exist_read(filename):
@@ -120,6 +121,15 @@ def might_not_exist_read(filename):
             data = {'data':[]}
             json.dump(data,f)
     return data
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return itertools.zip_longest(*args, fillvalue=fillvalue)
+def downsample(series, factor=1):
+    avg = lambda x: sum(x)/len(x)
+    chunks = grouper(series, factor)
+    return list(map(avg, chunks))
 def get_generated_power(solarfilename):
     cell_properties = {'system_capacity':2e-3 , 'azimuth':90 , 'tilt':20}
     df = pd.read_pickle(solarfilename+'.pkl')
@@ -143,14 +153,17 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors, solarpowerrecord, recordname=get_random_name()):
+    def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat, recordname=get_random_name()):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
+        self.deltat = deltat
+        num_ts = int(24/deltat)
+        self.num_ts = num_ts
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Discrete(max_batt+1),
                                    spaces.Discrete(max_batt+1),
-                                   spaces.Discrete(48)
+                                   spaces.Discrete(num_ts)
                                    ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.sensors = generate_network_coords(num_sensors)
@@ -158,7 +171,7 @@ class SolarSensorEnv(gym.Env):
         self.base_state = {k:(set_initial_status(k),max_batt,0,0) for k in obs_basis}
         self.state = self.base_state
         self.seed()
-        self.powerseries = solarpowerrecord
+        self.powerseries = downsample(solarpowerrecord, factor=int(48/num_ts))
         #rendering 
         uq = recordname
         self.fname = os.getcwd()+'/tmp/'+uq+'.json'
@@ -176,7 +189,7 @@ class SolarSensorEnv(gym.Env):
         #print('getting reward,{}:{}'.format(state, reward))
         new_state = get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
-                                  self.max_batt,old_state, action)
+                                  self.max_batt,self.num_ts, old_state, action)
         #if new_battery == 0:
         #    done=True
         #else: 
@@ -187,7 +200,7 @@ class SolarSensorEnv(gym.Env):
         self.state = self.base_state
         self.reward = 0
         self.sensors = generate_network_coords(len(self.sensors))
-        randomstart = random_start_generator()
+        randomstart = random_start_generator(self.deltat)
         currentslice = slicer(self.powerseries, randomstart, self._max_episode_steps)
         perturbed = full_perturber(self.sensors, currentslice)
         randomly_perturbed = {k:perturbed[idx]
