@@ -157,7 +157,9 @@ class SolarSensorEnv(gym.Env):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
+        self.deltat = deltat
         num_ts = int(24/deltat)
+        self.num_ts = num_ts
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Discrete(max_batt+1),
                                    spaces.Discrete(max_batt+1),
@@ -198,7 +200,7 @@ class SolarSensorEnv(gym.Env):
         self.state = self.base_state
         self.reward = 0
         self.sensors = generate_network_coords(len(self.sensors))
-        randomstart = random_start_generator()
+        randomstart = random_start_generator(self.deltat)
         currentslice = slicer(self.powerseries, randomstart, self._max_episode_steps)
         perturbed = full_perturber(self.sensors, currentslice)
         randomly_perturbed = {k:perturbed[idx]

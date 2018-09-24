@@ -19,8 +19,8 @@ if __name__=='__main__':
     register(
     id='SolarSensor-v0',
     entry_point='solar_sensor_env:SolarSensorEnv',
-    kwargs = {'max_batt':100,'num_sensors':1, 'solarpowerrecord':solarrecord, 'recordname':recordname}
+    kwargs = {'max_batt':100,'num_sensors':1,'deltat':3, 'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    naiveagent = simple_agent.SimpleAgent(env, n_episodes = 10, max_env_steps = 365*48)
+    naiveagent = simple_agent.SimpleAgent(env, n_episodes = 10, max_env_steps = 365*8)
     naiveagent.run()
