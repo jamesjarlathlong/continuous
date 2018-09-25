@@ -112,8 +112,8 @@ if __name__ == '__main__':
 	meta, df = get_solar(fname, year=year, lat=lat, lon=lon,
 			leap_year=leap_year, interval=interval,
 			utc=utc, your_name=your_name, your_email=your_email,
-			mailing_list=mailing_list, your_affiliation=your_affiliation,
-			reason_for_use=reason_for_use, api_key=api_key, attributes=attributes)
+			your_affiliation=your_affiliation,
+			api_key=api_key, attributes=attributes)
 	cell_properties = {'system_capacity':2e-3 , 'azimuth':180 , 'tilt':0}
 	gen = convert_to_energy(cell_properties, meta, df)
 	print(gen)
