@@ -16,6 +16,7 @@ import string
 import csv
 import sys
 import multi_sensor_env
+import time
 #850/2344 for simple q learning
 def timeit(method):
     def timed(*args, **kw):
