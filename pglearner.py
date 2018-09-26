@@ -59,7 +59,7 @@ def define_model(env, action_lookup, modeldir, learning_rate=1e-4):
         n_classes=num_actions,
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
-        hidden_units=[32,32],
+        hidden_units=[128,128],
         optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
@@ -155,7 +155,7 @@ class PgLearner():
                 # record various intermediates (needed later for backprop)
                 states.append(observation) # observation
                 actions.append(action)
-                #print('action: {}'.format(action))
+                print('action: {}'.format(action))
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
                 reward_sum += reward
