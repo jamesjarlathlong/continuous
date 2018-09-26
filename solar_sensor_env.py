@@ -17,6 +17,19 @@ import csv
 import sys
 import multi_sensor_env
 #850/2344 for simple q learning
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed
 def gaussian(x):
     mu = 12
     sig = 2
@@ -179,6 +192,7 @@ class SolarSensorEnv(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
+    @timeit
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state

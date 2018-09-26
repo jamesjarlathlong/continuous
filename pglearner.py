@@ -11,6 +11,19 @@ import tensorflow as tf
 from pandas.io.json import json_normalize
 import fastpredict
 from gym.envs.registration import registry, register, make, spec
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed
 def discount_rewards(gamma, r):
     """ take 1D float array of rewards and compute discounted reward """
     discounted_r = np.zeros_like(r)
@@ -59,7 +72,7 @@ def define_model(env, action_lookup, modeldir, learning_rate=1e-4):
         n_classes=num_actions,
         model_dir = modeldir,
         #Two hidden layers of 100 nodes each.
-        hidden_units=[128,128],
+        hidden_units=[32,32],
         optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
@@ -92,7 +105,7 @@ def random_burnin(env, action_lookup):
 def update_model(clf, states, actions, rewards):
     clf.train(input_fn=lambda:train_input_fn(states, actions, rewards))
     return clf
-
+@timeit
 def get_action(clf, state):
     flatstate = statelist_to_df([state]).iloc[0].tolist()
     predict_x = tuple([[x] for x in flatstate])
@@ -155,7 +168,7 @@ class PgLearner():
                 # record various intermediates (needed later for backprop)
                 states.append(observation) # observation
                 actions.append(action)
-                print('action: {}'.format(action))
+                #print('action: {}'.format(action))
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
                 reward_sum += reward
