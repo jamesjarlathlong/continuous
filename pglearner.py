@@ -12,6 +12,7 @@ from pandas.io.json import json_normalize
 import fastpredict
 from gym.envs.registration import registry, register, make, spec
 import time
+import simple_agent
 def timeit(method):
     def timed(*args, **kw):
         ts = time.time()
@@ -38,6 +39,7 @@ def name_tuples(tpl):
     return {str(idx):el for idx, el in enumerate(tpl)}
 def describe_state(state):
     return {k:name_tuples(v) for k,v in state.items()}
+@timeit
 def statelist_to_df(statelist):
     return json_normalize([describe_state(state) for state in statelist])
 def train_input_fn(features, labels, advantages, batch_size = 20):
@@ -82,6 +84,7 @@ def define_model(env, action_lookup, modeldir, learning_rate=1e-4):
     #classifier = update_model(classifier, [dummy_state],[0],[1])
     return classifier
 def random_burnin(env, action_lookup):
+    guided_agent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 365*8)
     num_choices = len(action_lookup)
     observation = env.reset()
     states, actions, batch_rewards= [],[],[]
@@ -89,7 +92,8 @@ def random_burnin(env, action_lookup):
     i=0
     done = False
     while not done and i<env._max_episode_steps:
-        action = np.random.randint(0,num_choices)
+        #action = np.random.randint(0,num_choices)
+        action = guided_agent.act(observation)
         states.append(observation)
         actions.append(action)
         observation, reward, done, info = env.step(action_lookup[action])
