@@ -24,6 +24,6 @@ if __name__=='__main__':
     )
     env = gym.make('SolarSensor-v0')
     pgagent = pglearner.PgLearner(env, learning_rate = 1e-4, n_episodes=1000,gamma=0.99,
-                              modeldir=loadmodel, batch=10,max_env_steps=365*8)
+                              modeldir=loadmodel, batch=1,max_env_steps=365*8)
     pgagent.run()
     #agent.model.save('tmp/{}'.format(modeldir))
