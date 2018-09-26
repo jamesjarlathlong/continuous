@@ -11,6 +11,7 @@ import tensorflow as tf
 from pandas.io.json import json_normalize
 import fastpredict
 from gym.envs.registration import registry, register, make, spec
+import time
 def timeit(method):
     def timed(*args, **kw):
         ts = time.time()
