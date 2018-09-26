@@ -13,9 +13,9 @@ if __name__=='__main__':
     phase = sys.argv[2]
     recordname = '_'.join([modeldir,phase])
     print('experiment id:{}'.format(recordname))
-    #solarrecord = simple_solar_env.emulate_solar_ts(365)
-    solarfname = 'training_12'
-    solarrecord = solar_sensor_env.get_generated_power(solarfname)
+    solarrecord = simple_solar_env.emulate_solar_ts(365)
+    #solarfname = 'training_12'
+    #solarrecord = solar_sensor_env.get_generated_power(solarfname)
     register(
     id='SolarSensor-v0',
     entry_point='solar_sensor_env:SolarSensorEnv',
