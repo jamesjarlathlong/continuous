@@ -93,10 +93,10 @@ def random_burnin(env, action_lookup):
     done = False
     while not done and i<env._max_episode_steps:
         #action = np.random.randint(0,num_choices)
-        action = guided_agent.act(observation)
+        action = action_lookup.index(guided_agent.act(observation))
         states.append(observation)
         actions.append(action)
-        observation, reward, done, info = env.step(action)#aenv.step(action_lookup[action])
+        observation, reward, done, info = env.step(action_lookup[action])
         rewards = np.append(reward, rewards)
         i+=1
     discounted_rewards = discount_rewards(0.99, rewards)
