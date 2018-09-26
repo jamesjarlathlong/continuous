@@ -39,7 +39,6 @@ def name_tuples(tpl):
     return {str(idx):el for idx, el in enumerate(tpl)}
 def describe_state(state):
     return {k:name_tuples(v) for k,v in state.items()}
-@timeit
 def statelist_to_df(statelist):
     return json_normalize([describe_state(state) for state in statelist])
 def train_input_fn(features, labels, advantages, batch_size = 20):
@@ -110,8 +109,11 @@ def random_burnin(env, action_lookup):
 def update_model(clf, states, actions, rewards):
     clf.train(input_fn=lambda:train_input_fn(states, actions, rewards))
     return clf
+<<<<<<< HEAD
 def guru(clf, predx):
     return clf.predict(predx)
+=======
+>>>>>>> 2d435515992a6ae6932f5e018f3497e07a154305
 def get_action(clf, state):
     flatstate = statelist_to_df([state]).iloc[0].tolist()
     predict_x = tuple([[x] for x in flatstate])
