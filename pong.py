@@ -63,7 +63,7 @@ def policy_backward(model, episode_h, episode_dlogp, episode_states):
   dW1 = episode_states.T.dot(dh)#np.dot(dh.T, episode_states)
   return {'W1':dW1, 'W2':dW2}
 
-def flatten_state(state):
+def flatten_state(I):
     """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
     I = I[35:195] # crop
     I = I[::2,::2,0] # downsample by factor of 2
