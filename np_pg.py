@@ -6,13 +6,13 @@ import itertools
 from pandas.io.json import json_normalize
 # hyperparametersd
 
-def initialise_model(resume=False):
+def initialise_model(resumedir=None):
   # model initialization
     H = 200
     D = 8 # input dimensionality: 80x80 grid
-    O = 4
-    if resume:
-        model = pickle.load(open('save.p', 'rb'))
+    O = int(D/2)
+    if resumedir:
+        model = pickle.load(open(resumedir, 'rb'))
     else:
         model = {}
         model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
@@ -72,10 +72,61 @@ def get_action(aprob):
     #print('probs: ', aprob, a)
     return a
     #return 0 if np.random.uniform()<aprob else 1
-
-class PgLearner():
-    def __init__(self,env, learning_rate,n_episodes, gamma, decay_rate=0.99, batch=1,max_env_steps=None):
+class PgExploit:
+    def __init__(self, env,n_episodes, max_env_steps, modeldir):
         self.env = env
+        if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
+        self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
+        self.n_episodes = n_episodes
+        self.modeldir = modeldir
+    def run(self, render = True):
+        clf = initialise_model(resumedir=self.modeldir)
+        observation = self.env.reset()
+        reward_sum = 0
+        done=False
+        for e in range(self.n_episodes):
+            i=0
+            while not done and i<self.env._max_episode_steps:
+                if render: self.env.render()
+                x = flatten_state(observation)
+                aprob, h = policy_forward(clf,x)
+                action = get_action(aprob)
+                observation, reward, done, info = self.env.step(self.action_lookup[action])
+                reward_sum += reward
+                i+=1
+            print('resetting env. episode reward total was {}'.format(reward_sum))
+            observation = self.env.reset()
+            reward_sum = 0
+        return e
+class PgBaseline():
+    def __init__(self, env,n_episodes, max_env_steps):
+        self.env = env
+        if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
+        self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
+        self.n_episodes = n_episodes
+    def run(self, render = True):
+        clf = initialise_model()
+        observation = self.env.reset()
+        reward_sum = 0
+        done=False
+        for e in range(self.n_episodes):
+            i=0
+            while not done and i<self.env._max_episode_steps:
+                if render: self.env.render()
+                x = flatten_state(observation)
+                aprob, h = policy_forward(clf,x)
+                action = get_action(aprob)
+                observation, reward, done, info = self.env.step(self.action_lookup[action])
+                reward_sum += reward
+                i+=1
+            print('resetting env. episode reward total was {}'.format(reward_sum))
+            observation = self.env.reset()
+            reward_sum = 0
+        return e
+class PgLearner():
+    def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
+        self.env = env
+        self.modeldir = modeldir
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         print(self.action_lookup)
@@ -140,7 +191,7 @@ class PgLearner():
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
             print('resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward))
-            if e % 100 == 0: pickle.dump(clf, open('save.p', 'wb'))
+            if e % 100 == 0: pickle.dump(clf, open(self.modeldir, 'wb'))
             observation = self.env.reset()
             reward_sum = 0
         return e
