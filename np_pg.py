@@ -9,18 +9,24 @@ from pandas.io.json import json_normalize
 def initialise_model(resume=False):
   # model initialization
     H = 200
-    D = 2 # input dimensionality: 80x80 grid
+    D = 8 # input dimensionality: 80x80 grid
+    O = 4
     if resume:
         model = pickle.load(open('save.p', 'rb'))
     else:
         model = {}
-        model['W1'] = np.random.randn(H,D) / np.sqrt(D) # "Xavier" initialization
-        model['W2'] = np.random.randn(H) / np.sqrt(H)
+        model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
+        model['W2'] = np.random.randn(H,O) / np.sqrt(H)
     return model
 
 def sigmoid(x): 
   return 1.0 / (1.0 + np.exp(-x)) # sigmoid "squashing" function to interval [0,1]
-
+def softmax(x):
+  if(len(x.shape)==1):
+    x = x[np.newaxis,...]
+  probs = np.exp(x - np.max(x, axis=1, keepdims=True))
+  probs /= np.sum(probs, axis=1, keepdims=True)
+  return probs
 def name_tuples(tpl):
     return {str(idx):el for idx, el in enumerate(tpl)}
 def describe_state(state):
@@ -39,27 +45,36 @@ def discount_rewards(gamma, r):
   return discounted_r
 
 def policy_forward(model, x):
-  h = np.dot(model['W1'], x)
-  h[h<0] = 0 # ReLU nonlinearity
-  logp = np.dot(model['W2'], h)
-  p = sigmoid(logp)
-  return p, h # return probability of taking action 2, and hidden state
+    #if(len(x.shape)==1):
+    #    x = x[np.newaxis,...]
+    h =x.dot(model['W1'])#h = np.dot(model['W1'], x)
+    h[h<0] = 0 # ReLU nonlinearity
+    logp = h.dot(model['W2'])
+    #print('logp: ',logp)
+    p = softmax(logp)
+    #print('p: ',p)
+    return p, h # return probability of taking action 2, and hidden state
 
 def policy_backward(model, episode_h, episode_dlogp, episode_states):
   """ backward pass. (eph is array of intermediate hidden states) """
-  dW2 = np.dot(episode_h.T, episode_dlogp).ravel()
-  dh = np.outer(episode_dlogp, model['W2'])
+  dW2 = episode_h.T.dot(episode_dlogp)# np.dot(episode_h.T, episode_dlogp)#.ravel()
+  dh = episode_dlogp.dot(model['W2'].T)#np.outer(episode_dlogp, model['W2'])
   dh[episode_h <= 0] = 0 # backpro prelu
-  dW1 = np.dot(dh.T, episode_states)
+  dW1 = episode_states.T.dot(dh)#np.dot(dh.T, episode_states)
   return {'W1':dW1, 'W2':dW2}
 
 def flatten_state(state):
-    return statelist_to_df([state]).iloc[0].tolist()
+    return np.asarray(statelist_to_df([state]).iloc[0].tolist())
 def get_action(aprob):
-    return 0 if np.random.uniform()<aprob else 1
+    u = np.random.uniform()
+    aprob_cum = np.cumsum(aprob)
+    a = np.where(u <= aprob_cum)[0][0]
+    #print('probs: ', aprob, a)
+    return a
+    #return 0 if np.random.uniform()<aprob else 1
 
 class PgLearner():
-    def __init__(self,env, learning_rate,n_episodes, gamma, decay_rate, batch=1,max_env_steps=None):
+    def __init__(self,env, learning_rate,n_episodes, gamma, decay_rate=0.99, batch=1,max_env_steps=None):
         self.env = env
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
@@ -91,7 +106,11 @@ class PgLearner():
                 # record various intermediates (needed later for backprop)
                 states.append(x) # observation
                 hiddens.append(h)
-                dlogps.append(action-aprob)
+                #softmax loss gradient
+                dlogsoftmax = aprob.copy()
+                dlogsoftmax[0,action] -=1
+                dlogps.append(dlogsoftmax)
+                #dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
                 reward_sum += reward
