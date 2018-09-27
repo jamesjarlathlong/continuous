@@ -180,7 +180,7 @@ class SolarSensorEnv(gym.Env):
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.sensors = random_graph.generate_network_coords(num_sensors)
         self.observation_space = spaces.Dict(obs_basis)
-        self.base_state = {k:(set_initial_status(k),random.randrange(max_batt),0,0) for k in obs_basis}
+        self.base_state = {k:(set_initial_status(k),max_batt,0,0) for k in obs_basis}
         self.state = self.base_state
         self.seed()
         self.powerseries = downsample(solarpowerrecord, factor=int(48/num_ts))
@@ -193,7 +193,6 @@ class SolarSensorEnv(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-    @timeit
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
