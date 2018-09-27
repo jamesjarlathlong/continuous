@@ -85,13 +85,12 @@ class PgLearner():
         self.modeldir = modeldir
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         #self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
-        print(self.action_lookup)
         self.learning_rate = learning_rate
         self.n_episodes = n_episodes
         self.gamma = gamma
         self.batch_size = batch
         self.decay_rate = decay_rate
-    def run(self,render=True):
+    def run(self,render=False):
         clf = initialise_model()
         grad_buffer = { k : np.zeros_like(v) for k,v in clf.items() } # update buffers that add up gradients over a batch
         rmsprop_cache = { k : np.zeros_like(v) for k,v in clf.items() } # rmsprop memory
@@ -157,5 +156,5 @@ class PgLearner():
         return e
 if __name__ == '__main__':
     env = gym.make("Pong-v0")
-    pgagent = PgLearner(learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=500,gamma=0.99, batch=1)
+    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=500,gamma=0.99, batch=1)
     pgagent.run()
