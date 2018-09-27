@@ -23,6 +23,6 @@ if __name__=='__main__':
     kwargs = {'max_batt':100,'num_sensors':2,'deltat':3, 'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    pgagent = np_pg.PgLearner(env, learning_rate = 1e-5, modeldir=savemodel, n_episodes=500,gamma=0.99, batch=1,max_env_steps=28*8)
+    pgagent = np_pg.PgLearner(env, learning_rate = 1e-4, modeldir=savemodel, n_episodes=5000,gamma=0.99, batch=1,max_env_steps=365*8)
     pgagent.run()
     #agent.model.save('tmp/{}'.format(modeldir))
