@@ -147,7 +147,7 @@ class PgLearner():
                 for k,v in clf.items():
                     g = grad_buffer[k]
                     rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                    clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                    clf[k] += self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                     grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
@@ -159,5 +159,5 @@ class PgLearner():
         return e
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
-    pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=50000,gamma=0.99, batch=100)
+    pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=1000,gamma=0.99, batch=5)
     pgagent.run()
