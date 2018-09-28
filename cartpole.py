@@ -83,7 +83,7 @@ def get_action(aprob):
     #a = np.where(u <= aprob_cum)[0][0]
     #print('probs: ', aprob, a)
     #return a
-    return 0 if np.random.uniform()<aprob else 1
+    return 1 if np.random.uniform()<aprob else 0
 
 class PgLearner():
     def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
