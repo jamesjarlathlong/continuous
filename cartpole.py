@@ -73,12 +73,12 @@ def flatten_state(I):
     I[I != 0] = 1 # everything else (paddles, ball) just set to 1
     return I.astype(np.float).ravel()
 def get_action(aprob):
-    u = np.random.uniform()
-    aprob_cum = np.cumsum(aprob)
-    a = np.where(u <= aprob_cum)[0][0]
+    #u = np.random.uniform()
+    #aprob_cum = np.cumsum(aprob)
+    #a = np.where(u <= aprob_cum)[0][0]
     #print('probs: ', aprob, a)
-    return a
-    #return 0 if np.random.uniform()<aprob else 1
+    #return a
+    return 0 if np.random.uniform()<aprob else 1
 
 class PgLearner():
     def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
