@@ -10,7 +10,7 @@ def initialise_model(resumedir=None):
   # model initialization
     H = 10
     D = 4#80*80 # input dimensionality: 80x80 grid
-    O = 2
+    O = 1
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -51,7 +51,8 @@ def policy_forward(model, x):
     h[h<0] = 0 # ReLU nonlinearity
     logp = h.dot(model['W2'])
     #print('logp: ',logp)
-    p = softmax(logp)
+    #p = softmax(logp)
+    p=sigmoid(logp)
     #print('p: ',p)
     return p, h # return probability of taking action 2, and hidden state
 
@@ -119,10 +120,10 @@ class PgLearner():
                 states.append(x) # observation
                 hiddens.append(h)
                 #softmax loss gradient
-                dlogsoftmax = aprob.copy()
-                dlogsoftmax[0,action] -=1
-                dlogps.append(dlogsoftmax)
-                #dlogps.append(action-aprob)
+                #dlogsoftmax = aprob.copy()
+                #dlogsoftmax[0,action] -=1
+                #dlogps.append(dlogsoftmax)
+                dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(action)
                 reward_sum += reward
