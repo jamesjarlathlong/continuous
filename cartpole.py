@@ -110,7 +110,9 @@ class PgLearner():
                 x = observation
                 #x = cur_x - prev_x if prev_x is not None else np.zeros(80*80)
                 #prev_x = cur_x
+                print('x',x)
                 aprob, h = policy_forward(clf, x)
+                print('aprob,',aprob)
                 action = get_action(aprob)
                 print('action: ', action)
                 # record various intermediates (needed later for backprop)
