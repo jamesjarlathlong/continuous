@@ -83,7 +83,7 @@ def define_model(env, action_lookup, modeldir, learning_rate=1e-4):
     #classifier = update_model(classifier, [dummy_state],[0],[1])
     return classifier
 def random_burnin(env, action_lookup):
-    guided_agent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 365*8)
+    guided_agent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 28*8)
     num_choices = len(action_lookup)
     observation = env.reset()
     states, actions, batch_rewards= [],[],[]

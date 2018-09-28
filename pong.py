@@ -109,10 +109,11 @@ class PgLearner():
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
                 cur_x = flatten_state(observation)
-                x = cur_x - prev_x if prev_x is not None else np.zeros(D)
+                x = cur_x - prev_x if prev_x is not None else np.zeros(80*80)
                 prev_x = cur_x
                 aprob, h = policy_forward(clf, x)
                 action = get_action(aprob)
+                print('action: ', action)
                 # record various intermediates (needed later for backprop)
                 states.append(x) # observation
                 hiddens.append(h)
@@ -140,12 +141,12 @@ class PgLearner():
             stacked_logps *= discounted_rewards # modulate the gradient with advantage (PG magic happens right here.) 
             grad = policy_backward(clf, stacked_hidden, stacked_logps, stacked_states)
             for k in clf: grad_buffer[k]+=grad[k]           
-            # perform rmsprop parameter update every batch_size episodes
+            # perform rmsprop parameter update every batch_size mode
             if e % self.batch_size == 0:
                 for k,v in clf.items():
                     g = grad_buffer[k]
                     rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                    clf[k] += self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                    clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                     grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
@@ -154,6 +155,7 @@ class PgLearner():
             prev_x = None
             observation = self.env.reset()
             reward_sum = 0
+            done=False
         return e
 if __name__ == '__main__':
     env = gym.make("Pong-v0")
