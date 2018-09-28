@@ -149,7 +149,7 @@ class PgLearner():
                     observation = self.env.reset()
                     reward_sum = 0
                     break
-                return e
+               return e
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
     pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=10000,gamma=0.99, batch=5)
