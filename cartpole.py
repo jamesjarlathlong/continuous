@@ -1,15 +1,18 @@
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
 import numpy as np
+# hyperparametersd
+import simple_solar_env, solar_sensor_env
+import itertools
+import numpy as np
 import pickle
 import gym
+from gym.envs.registration import registry, register, make, spec
 import itertools
 from pandas.io.json import json_normalize
-# hyperparametersd
-
 def initialise_model(resumedir=None):
   # model initialization
-    H = 256
-    D = 4#80*80 # input dimensionality: 80x80 grid
+    H = 64
+    D = 2#80*80 # input dimensionality: 80x80 grid
     O = 2
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
@@ -19,7 +22,15 @@ def initialise_model(resumedir=None):
         model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
         model['W2'] = np.random.randn(H,O) / np.sqrt(H)
     return model
-
+def name_tuples(tpl):
+    #print(tpl)
+    return {str(idx):el for idx, el in enumerate(tpl[0:2])}
+def describe_state(state):
+    return {k:name_tuples(v) for k,v in state.items()}
+def statelist_to_df(statelist):
+    return json_normalize([describe_state(state) for state in statelist])
+def flatten_state(state):
+    return np.asarray(statelist_to_df([state]).iloc[0].tolist())
 def sigmoid(x): 
   return 1.0 / (1.0 + np.exp(-x)) # sigmoid "squashing" function to interval [0,1]
 def softmax(x):
@@ -69,6 +80,7 @@ class PgLearner():
     def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
         self.env = env
         self.modeldir = modeldir
+        self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         #self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         #print(self.action_lookup)
@@ -85,65 +97,72 @@ class PgLearner():
         running_reward = None
         reward_sum = 0
         episode_number = 0
+        observation = self.env.reset()
         done=False
         
         for e in range(self.n_episodes):
-            print('#######New episode#############',e)
-            observation = self.env.reset()
-            while True:
-                x = observation
-                #x = cur_x - prev_x if prev_x is not None else np.zeros(80*80)
-                #prev_x = cur_x
-                #print('x',x)
+            print('#######New episode#############')
+            i=0
+            while not done and i<self.env._max_episode_steps:
+                if render: self.env.render()
+                x = flatten_state(observation)#flatten_state(observation)
                 aprob, h = policy_forward(clf, x)
-                #print('aprob,',aprob)
-                action = get_action(aprob)#= 1 if np.random.uniform()<aprob else 0#get_action(aprob)
+                action = get_action(aprob)
+                # record various intermediates (needed later for backprop)
                 states.append(x) # observation
                 hiddens.append(h)
-                #print('action: ', action)
-                # record various intermediates (needed later for backprop)
-                #y = 1 if action==1 else 0
                 #softmax loss gradient
                 dlogsoftmax = aprob.copy()
                 dlogsoftmax[0,action] -=1
                 dlogps.append(dlogsoftmax)
-                #dlogps.append(y - aprob)
+                #dlogps.append(action-aprob)
                 # step the environment and get new measurements
-                observation, reward, done, info = self.env.step(action)
+                observation, reward, done, info = self.env.step(self.action_lookup[action])
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
-                if done:
-                    # stack together all inputs, hidden states, action gradients, and rewards for this episode
-                    stacked_states = np.vstack(states)
-                    stacked_hidden = np.vstack(hiddens)
-                    stacked_logps = np.vstack(dlogps)
-                    stacked_rewards = np.vstack(rewards)
-                    states, rewards, hiddens, dlogps = [],[],[],[]
-                    # compute the discounted reward backwards through time
-                    discounted_rewards = discount_rewards(self.gamma, stacked_rewards)
-                    # standardize the rewards to be unit normal (helps control the gradient estimator variance)
-                    discounted_rewards -= np.mean(discounted_rewards)
-                    discounted_rewards /= np.std(discounted_rewards)
-
-                    stacked_logps *= discounted_rewards # modulate the gradient with advantage (PG magic happens right here.) 
-                    grad = policy_backward(clf, stacked_hidden, stacked_logps, stacked_states)
-                    for k in clf: grad_buffer[k]+=grad[k]           
-                    # perform rmsprop parameter update every batch_size mode
-                    if e % self.batch_size == 0:
-                        for k,v in clf.items():
-                            g = grad_buffer[k]
-                            rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                            clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
-                            grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
-                    # boring book-keeping
-                    running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-                    print('resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward))
-                    if e % 100 == 0: pickle.dump(clf, open(self.modeldir, 'wb'))
-                    observation = self.env.reset()
-                    reward_sum = 0
-                    break
+                i+=1
+                #print(i)
+            # stack together all inputs, hidden states, action gradients, and rewards for this episode
+            #print(states)
+            stacked_states = np.vstack(states)
+            stacked_hidden = np.vstack(hiddens)
+            stacked_logps = np.vstack(dlogps)
+            stacked_rewards = np.vstack(rewards)
+            states, rewards, hiddens, dlogps = [],[],[],[]
+            # compute the discounted reward backwards through time
+            discounted_rewards = discount_rewards(self.gamma, stacked_rewards)
+            # standardize the rewards to be unit normal (helps control the gradient estimator variance)
+            discounted_rewards = discounted_rewards - np.mean(discounted_rewards)
+            discounted_rewards = discounted_rewards / np.std(discounted_rewards)
+            stacked_logps *= discounted_rewards # modulate the gradient with advantage (PG magic happens right here.) 
+            grad = policy_backward(clf, stacked_hidden, stacked_logps, stacked_states)
+            for k in clf: grad_buffer[k]+=grad[k]           
+            # perform rmsprop parameter update every batch_size episodes
+            if e % self.batch_size == 0:
+                print('UPDATING')
+                for k,v in clf.items():
+                    g = grad_buffer[k]
+                    rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
+                    clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                    grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
+                # boring book-keeping
+            running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
+            print('resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward))
+            if e % 100 == 0: pickle.dump(clf, open(self.modeldir, 'wb'))
+            observation = self.env.reset()
+            reward_sum = 0
+            done=False
         return e
 if __name__ == '__main__':
-    env = gym.make('CartPole-v0')
-    pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=10000,gamma=0.99, batch=5)
+    solarrecord = simple_solar_env.emulate_solar_ts(365)
+    #solarfname = 'training_12'
+    #solarrecord = solar_sensor_env.get_generated_power(solarfname)
+    register(
+    id='SolarSensor-v0',
+    entry_point='solar_sensor_env:SolarSensorEnv',
+    kwargs = {'max_batt':10,'num_sensors':1,'deltat':3, 'solarpowerrecord':solarrecord, 'recordname':'fake_cartpole'}
+    )
+    env = gym.make('SolarSensor-v0')
+    #env = gym.make('CartPole-v0')
+    pgagent = PgLearner(env,learning_rate = 1e-3, modeldir='tmp/pong6', n_episodes=5000,gamma=0.99, batch=5, max_env_steps = 28*8)
 pgagent.run()

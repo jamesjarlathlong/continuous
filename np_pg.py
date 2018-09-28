@@ -8,8 +8,8 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 28
-    D = 3 # input dimensionality: 80x80 grid
+    H = 32
+    D = 2 # input dimensionality: 80x80 grid
     O = 2#int(D/2)
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
@@ -28,7 +28,7 @@ def softmax(x):
   probs /= np.sum(probs, axis=1, keepdims=True)
   return probs
 def name_tuples(tpl):
-    return {str(idx):el for idx, el in enumerate(tpl)}
+    return {str(idx):el for idx, el in enumerate(tpl[0:2])}
 def describe_state(state):
     return {k:name_tuples(v) for k,v in state.items()}
 def statelist_to_df(statelist):
