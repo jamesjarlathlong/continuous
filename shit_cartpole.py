@@ -106,7 +106,7 @@ for episode_number in range(1000):
 					rmsprop_cache[k] = decay_rate * rmsprop_cache[k] + (1 - decay_rate) * g**2
 					model[k] += learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
 					grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
-
+			print('resetting env. episode reward total was: ',reward_sum)
 			reward_sum = 0
 			observation = env.reset() # reset env
 
