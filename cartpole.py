@@ -30,14 +30,13 @@ def softmax(x):
   return probs
 
 def discount_rewards(gamma, r):
-  """ take 1D float array of rewards and compute discounted reward """
-  discounted_r = np.zeros_like(r)
-  running_add = 0
-  for t in reversed(range(0, r.size)):
-    if r[t] != 0: running_add = 0 # reset the sum, since this was a game boundary (pong specific!)
-    running_add = running_add * gamma + r[t]
-    discounted_r[t] = running_add
-  return discounted_r
+    """ take 1D float array of rewards and compute discounted reward """
+    discounted_r = np.zeros_like(r)
+    running_add = 0
+    for t in reversed(range(0, r.size)):
+        running_add = running_add * gamma + r[t]
+        discounted_r[t] = running_add
+    return discounted_r
 
 def policy_forward(model, x):
     #if(len(x.shape)==1):
@@ -153,4 +152,4 @@ class PgLearner():
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
     pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=10000,gamma=0.99, batch=5)
-    pgagent.run()
+pgagent.run()
