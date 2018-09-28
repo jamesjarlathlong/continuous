@@ -14,7 +14,10 @@ def zip_dicts(statusd, battd):
     return full_state
 def zip_3dicts(statusd, battd, diffd):
     full_state = {k:(v, battd[k], diffd[k]) for k,v in statusd.items()}
-    return full_state    
+    return full_state
+def zip_4dicts(statusd, battd, diffd, timed):
+    full_state = {k:(v, battd[k], diffd[k], timed[k]) for k,v in statusd.items()}
+    return full_state
 batt_evolution = functools.partial(sensor_env.battery_dynamics,10)
 def what_is_noop(state):
     status = state[0]
@@ -36,9 +39,10 @@ def get_new_state(old_state, action):
 def get_reward(old_state):
     individual_rewards = [sensor_env.get_reward(v) for k,v in old_state.items()]
     awake_reward = int(any(individual_rewards))
-    capable_reward = int(all([v[1] for k,v in old_state.items()]))
+    how_many_nonzero = [v[1]>0 for k,v in old_state.items()]
+    capable_rewards = sum(how_many_nonzero)/len(how_many_nonzero)
     #print('awake,{}, capable,{}'.format(awake_reward, capable_reward))
-    return (awake_reward and capable_reward)
+    return awake_reward*capable_rewards
 class MultiSensorEnv(gym.Env):
     def __init__(self, num_sensors=2):
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))

@@ -8,7 +8,6 @@ def get_reward(state):
     else:
         reward = 0
     return reward
-
 def status_dynamics(status, battery, action):
     if action == 0:#wakeup
         if status == 1:#presleep

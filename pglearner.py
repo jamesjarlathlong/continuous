@@ -11,6 +11,21 @@ import tensorflow as tf
 from pandas.io.json import json_normalize
 import fastpredict
 from gym.envs.registration import registry, register, make, spec
+import time
+import simple_agent
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed
 def discount_rewards(gamma, r):
     """ take 1D float array of rewards and compute discounted reward """
     discounted_r = np.zeros_like(r)
@@ -43,13 +58,15 @@ def predict_input_fn(features):
     iterator = dataset.make_one_shot_iterator()
     return iterator.get_next()
 
-def define_model(env, num_actions, modeldir, learning_rate=1e-4):
+def define_model(env, action_lookup, modeldir, learning_rate=1e-4):
     dummy_state = env.reset()
+    num_actions = len(action_lookup)
     features = statelist_to_df([dummy_state])
     columns_feat = [tf.feature_column.numeric_column(key=i) for i in features.columns]
-    print(columns_feat)
+    #print(columns_feat)
     weight_column = tf.feature_column.numeric_column('weight')
     # Build 2 hidden layer DNN with 10, 10 units respectively.
+    print('defining model: ,',modeldir)
     classifier = tf.estimator.DNNClassifier(
         feature_columns=columns_feat,
         weight_column= weight_column,
@@ -61,16 +78,43 @@ def define_model(env, num_actions, modeldir, learning_rate=1e-4):
         optimizer=tf.train.AdamOptimizer(
           learning_rate=learning_rate,
         ))
-    classifier = update_model(classifier, [dummy_state],[0],[1])
+    states, actions, batch_rewards = random_burnin(env, action_lookup)
+    classifier = update_model(classifier, states, actions, batch_rewards)
+    #classifier = update_model(classifier, [dummy_state],[0],[1])
     return classifier
+def random_burnin(env, action_lookup):
+    guided_agent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 28*8)
+    num_choices = len(action_lookup)
+    observation = env.reset()
+    states, actions, batch_rewards= [],[],[]
+    rewards = np.empty(0).reshape(0,1)
+    i=0
+    done = False
+    while not done and i<env._max_episode_steps:
+        #action = np.random.randint(0,num_choices)
+        action = action_lookup.index(guided_agent.act(observation))
+        states.append(observation)
+        actions.append(action)
+        observation, reward, done, info = env.step(action_lookup[action])
+        rewards = np.append(reward, rewards)
+        i+=1
+    discounted_rewards = discount_rewards(0.99, rewards)
+    # standardize the rewards to be unit normal (helps control the gradient estimator variance)
+    discounted_rewards-= np.mean(discounted_rewards)
+    discounted_rewards /= np.std(discounted_rewards)
+    batch_rewards = batch_rewards+list(discounted_rewards)
+    return states, actions, batch_rewards
+
+
 def update_model(clf, states, actions, rewards):
     clf.train(input_fn=lambda:train_input_fn(states, actions, rewards))
     return clf
-
+def guru(clf, predx):
+    return clf.predict(predx)
 def get_action(clf, state):
     flatstate = statelist_to_df([state]).iloc[0].tolist()
     predict_x = tuple([[x] for x in flatstate])
-    pred = clf.predict(predict_x)
+    pred = guru(clf, predict_x)
     probabilities = [p.get('probabilities') for p in pred][0]
     action_labels = [idx for idx, el in enumerate(probabilities)]
     choice= np.random.choice(action_labels, p=probabilities)
@@ -105,7 +149,7 @@ class PgLearner():
         self.batch_size = batch
         self.modeldir = modeldir
     def run(self,render=True):
-        clf = define_model(self.env, len(self.action_lookup), self.modeldir, learning_rate=self.learning_rate)
+        clf = define_model(self.env, self.action_lookup, self.modeldir, learning_rate=self.learning_rate)
         featurenames = get_feature_names(self.env)
         #print('f: ',featurenames)
         genfn = functools.partial(generator_evaluation_fn, featurenames)
@@ -129,6 +173,7 @@ class PgLearner():
                 # record various intermediates (needed later for backprop)
                 states.append(observation) # observation
                 actions.append(action)
+                #print('action: {}'.format(action))
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
                 reward_sum += reward

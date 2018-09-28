@@ -65,8 +65,8 @@ def Pk3(kx, ky,kz):
             return 0.0
         return np.sqrt(Pk(np.sqrt(kx**2 + ky**2+ (4*kz)**2)))
 
-def gpu_gaussian_random_field(size = 30, scale=1):
-    shape = (size,size, 1*24)
+def gpu_gaussian_random_field(size = 30, scale=1, length=48*28):
+    shape = (size,size, length)
     amplitude = tf.constant(form_spectral_matrix(shape),dtype = tf.float32)
     complex_amplitude =tf.complex(amplitude, tf.zeros(shape, dtype=tf.float32))
     random_noise = tf.random_normal(shape=shape, stddev=scale, dtype=tf.float32)
