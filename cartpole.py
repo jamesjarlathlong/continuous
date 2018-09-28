@@ -58,7 +58,7 @@ def policy_forward(model, x):
 
 def policy_backward(model, episode_h, episode_dlogp, episode_states):
   """ backward pass. (eph is array of intermediate hidden states) """
-  dW2 = episode_h.T.dot(episode_dlogp)# np.dot(episode_h.T, episode_dlogp)#.ravel()
+  dW2 = episode_h.T.dot(episode_dlogp).ravel()# np.dot(episode_h.T, episode_dlogp)#.ravel()
   dh = episode_dlogp.dot(model['W2'].T)#np.outer(episode_dlogp, model['W2'])
   dh[episode_h <= 0] = 0 # backpro prelu
   dW1 = episode_states.T.dot(dh)#np.dot(dh.T, episode_states)
