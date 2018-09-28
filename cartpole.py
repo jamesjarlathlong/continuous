@@ -115,6 +115,7 @@ class PgLearner():
                 aprob, h = policy_forward(clf, x)
                 #print('aprob,',aprob)
                 action = get_action(aprob)
+                y = 1 if action==1 else 0
                 #print('action: ', action)
                 # record various intermediates (needed later for backprop)
                 states.append(x) # observation
@@ -123,7 +124,7 @@ class PgLearner():
                 #dlogsoftmax = aprob.copy()
                 #dlogsoftmax[0,action] -=1
                 #dlogps.append(dlogsoftmax)
-                dlogps.append(action-aprob)
+                dlogps.append(y-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(action)
                 reward_sum += reward
@@ -139,7 +140,7 @@ class PgLearner():
             discounted_rewards = discount_rewards(self.gamma, stacked_rewards)
             # standardize the rewards to be unit normal (helps control the gradient estimator variance)
             discounted_rewards = discounted_rewards - np.mean(discounted_rewards)
-            #discounted_rewards = discounted_rewards / np.std(discounted_rewards)
+            discounted_rewards = discounted_rewards / np.std(discounted_rewards)
             stacked_logps *= discounted_rewards # modulate the gradient with advantage (PG magic happens right here.) 
             grad = policy_backward(clf, stacked_hidden, stacked_logps, stacked_states)
             for k in clf: grad_buffer[k]+=grad[k]           
