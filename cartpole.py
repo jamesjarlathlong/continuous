@@ -16,7 +16,7 @@ def initialise_model(resumedir=None):
     else:
         model = {}
         model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
-        model['W2'] = np.random.randn(H,O) / np.sqrt(H)
+        model['W2'] = np.random.randn(H) / np.sqrt(H)
     return model
 
 def sigmoid(x): 
