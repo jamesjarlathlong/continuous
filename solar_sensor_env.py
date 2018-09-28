@@ -125,7 +125,8 @@ def get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, action
                          k, v in old_state.items()} 
     diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
     #times = {k:new_time(max_t, v[3]) for k,v, in old_state.items()}
-    new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)#, times)
+    #new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
+    new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
     return new_state
 def might_not_exist_read(filename):
     try:
@@ -180,7 +181,11 @@ class SolarSensorEnv(gym.Env):
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.sensors = random_graph.generate_network_coords(num_sensors)
         self.observation_space = spaces.Dict(obs_basis)
+<<<<<<< HEAD
         self.base_state = {k:(set_initial_status(k),max_batt,0) for k in obs_basis}
+=======
+        self.base_state = {k:(set_initial_status(k),random.randrange(0,max_batt),0) for k in obs_basis}
+>>>>>>> c0c7f83655310fa5067e67a62765098cc26b1049
         self.state = self.base_state
         self.seed()
         self.powerseries = downsample(solarpowerrecord, factor=int(48/num_ts))
