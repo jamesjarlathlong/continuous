@@ -8,26 +8,26 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 10
+    H = 256
     D = 4#80*80 # input dimensionality: 80x80 grid
-    O = 1
+    O = 2
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
         print('defining new model')
         model = {}
-        model['W1'] = np.random.randn(H,D) / np.sqrt(D) # "Xavier" initialization
-        model['W2'] = np.random.randn(H) / np.sqrt(H)
+        model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
+        model['W2'] = np.random.randn(H,O) / np.sqrt(H)
     return model
 
 def sigmoid(x): 
   return 1.0 / (1.0 + np.exp(-x)) # sigmoid "squashing" function to interval [0,1]
 def softmax(x):
-  if(len(x.shape)==1):
-    x = x[np.newaxis,...]
-  probs = np.exp(x - np.max(x, axis=1, keepdims=True))
-  probs /= np.sum(probs, axis=1, keepdims=True)
-  return probs
+    #if(len(x.shape)==1):
+    #  x = x[np.newaxis,...]
+    probs = np.exp(x - np.max(x, axis=1, keepdims=True))
+    probs /= np.sum(probs, axis=1, keepdims=True)
+    return probs
 
 def discount_rewards(gamma, r):
     """ take 1D float array of rewards and compute discounted reward """
@@ -39,37 +39,31 @@ def discount_rewards(gamma, r):
     return discounted_r
 
 def policy_forward(model, x):
-    #if(len(x.shape)==1):
-    #    x = x[np.newaxis,...]
-    #h =x.dot(model['W1'])#
-    h = np.dot(model['W1'], x)
+    if(len(x.shape)==1):
+        x = x[np.newaxis,...]
+    h =x.dot(model['W1'])#h = np.dot(model['W1'], x)
     h[h<0] = 0 # ReLU nonlinearity
-    #logp = h.dot(model['W2'])
-    logp = np.dot(model['W2'], h)
+    logp = h.dot(model['W2'])
     #print('logp: ',logp)
-    #p = softmax(logp)
-    p=sigmoid(logp)
+    p = softmax(logp)
     #print('p: ',p)
     return p, h # return probability of taking action 2, and hidden state
 
 def policy_backward(model, episode_h, episode_dlogp, episode_states):
-  """ backward pass. (eph is array of intermediate hidden states) """
-  #dW2 = episode_h.T.dot(episode_dlogp).ravel()#
-  dW2=np.dot(episode_h.T, episode_dlogp).ravel()
-  #dh = episode_dlogp.dot(model['W2'].T)#
-  dh=np.outer(episode_dlogp, model['W2'])
-  dh[episode_h <= 0] = 0 # backpro prelu
-  #dW1 = episode_states.T.dot(dh)#
-  dW1=np.dot(dh.T, episode_states)
-  return {'W1':dW1, 'W2':dW2}
+    """ backward pass. (eph is array of intermediate hidden states) """
+    dW2 = episode_h.T.dot(episode_dlogp)# np.dot(episode_h.T, episode_dlogp)#.ravel()
+    dh = episode_dlogp.dot(model['W2'].T)#np.outer(episode_dlogp, model['W2'])
+    dh[episode_h <= 0] = 0 # backpro prelu
+    dW1 = episode_states.T.dot(dh)#np.dot(dh.T, episode_states)
+    return {'W1':dW1, 'W2':dW2}
 
 def get_action(aprob):
-    #u = np.random.uniform()
-    #aprob_cum = np.cumsum(aprob)
-    #a = np.where(u <= aprob_cum)[0][0]
+    u = np.random.uniform()
+    aprob_cum = np.cumsum(aprob)
+    a = np.where(u <= aprob_cum)[0][0]
     #print('probs: ', aprob, a)
-    #return a
-    return 1 if np.random.uniform()<aprob else 0
+    return a
+    #return 1 if np.random.uniform()<aprob else 0
 
 class PgLearner():
     def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
@@ -103,17 +97,17 @@ class PgLearner():
                 #print('x',x)
                 aprob, h = policy_forward(clf, x)
                 #print('aprob,',aprob)
-                action = 1 if np.random.uniform()<aprob else 0#get_action(aprob)
+                action = get_action(aprob)#= 1 if np.random.uniform()<aprob else 0#get_action(aprob)
                 states.append(x) # observation
                 hiddens.append(h)
                 #print('action: ', action)
                 # record various intermediates (needed later for backprop)
-                y = 1 if action==1 else 0
+                #y = 1 if action==1 else 0
                 #softmax loss gradient
-                #dlogsoftmax = aprob.copy()
-                #dlogsoftmax[0,action] -=1
-                #dlogps.append(dlogsoftmax)
-                dlogps.append(y - aprob)
+                dlogsoftmax = aprob.copy()
+                dlogsoftmax[0,action] -=1
+                dlogps.append(dlogsoftmax)
+                #dlogps.append(y - aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(action)
                 reward_sum += reward
@@ -139,7 +133,7 @@ class PgLearner():
                         for k,v in clf.items():
                             g = grad_buffer[k]
                             rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                            clf[k] += self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                            clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                             grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
                     # boring book-keeping
                     running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
