@@ -15,7 +15,7 @@ def initialise_model(resumedir=None):
         model = pickle.load(open(resumedir, 'rb'))
     else:
         model = {}
-        model['W1'] = np.random.randn(D,H) / np.sqrt(D) # "Xavier" initialization
+        model['W1'] = np.random.randn(H,D) / np.sqrt(D) # "Xavier" initialization
         model['W2'] = np.random.randn(H) / np.sqrt(H)
     return model
 
@@ -47,9 +47,11 @@ def discount_rewards(gamma, r):
 def policy_forward(model, x):
     #if(len(x.shape)==1):
     #    x = x[np.newaxis,...]
-    h =x.dot(model['W1'])#h = np.dot(model['W1'], x)
+    #h =x.dot(model['W1'])#
+    h = np.dot(model['W1'], x)
     h[h<0] = 0 # ReLU nonlinearity
-    logp = h.dot(model['W2'])
+    #logp = h.dot(model['W2'])
+    logp = np.dot(model['W2'], h)
     #print('logp: ',logp)
     #p = softmax(logp)
     p=sigmoid(logp)
@@ -58,10 +60,13 @@ def policy_forward(model, x):
 
 def policy_backward(model, episode_h, episode_dlogp, episode_states):
   """ backward pass. (eph is array of intermediate hidden states) """
-  dW2 = episode_h.T.dot(episode_dlogp).ravel()# np.dot(episode_h.T, episode_dlogp)#.ravel()
-  dh = episode_dlogp.dot(model['W2'].T)#np.outer(episode_dlogp, model['W2'])
+  #dW2 = episode_h.T.dot(episode_dlogp).ravel()#
+  dW2=np.dot(episode_h.T, episode_dlogp).ravel()
+  #dh = episode_dlogp.dot(model['W2'].T)#
+  dh=np.outer(episode_dlogp, model['W2'])
   dh[episode_h <= 0] = 0 # backpro prelu
-  dW1 = episode_states.T.dot(dh)#np.dot(dh.T, episode_states)
+  #dW1 = episode_states.T.dot(dh)#
+  dW1=np.dot(dh.T, episode_states)
   return {'W1':dW1, 'W2':dW2}
 
 def flatten_state(I):
