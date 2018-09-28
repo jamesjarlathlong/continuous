@@ -85,7 +85,7 @@ class PgLearner():
         self.modeldir = modeldir
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         #self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
-        print(self.action_lookup)
+        #print(self.action_lookup)
         self.learning_rate = learning_rate
         self.n_episodes = n_episodes
         self.gamma = gamma
