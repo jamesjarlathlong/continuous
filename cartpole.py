@@ -14,6 +14,7 @@ def initialise_model(resumedir=None):
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
+        print('defining new model')
         model = {}
         model['W1'] = np.random.randn(H,D) / np.sqrt(D) # "Xavier" initialization
         model['W2'] = np.random.randn(H) / np.sqrt(H)
