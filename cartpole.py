@@ -110,11 +110,11 @@ class PgLearner():
                 x = observation
                 #x = cur_x - prev_x if prev_x is not None else np.zeros(80*80)
                 #prev_x = cur_x
-                print('x',x)
+                #print('x',x)
                 aprob, h = policy_forward(clf, x)
-                print('aprob,',aprob)
+                #print('aprob,',aprob)
                 action = get_action(aprob)
-                print('action: ', action)
+                #print('action: ', action)
                 # record various intermediates (needed later for backprop)
                 states.append(x) # observation
                 hiddens.append(h)
@@ -159,5 +159,5 @@ class PgLearner():
         return e
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
-    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=500,gamma=0.99, batch=1)
+    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=5000,gamma=0.99, batch=1)
     pgagent.run()
