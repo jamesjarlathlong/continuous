@@ -159,5 +159,5 @@ class PgLearner():
         return e
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
-    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=5000,gamma=0.99, batch=1)
+    pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=1000,gamma=0.99, batch=5)
     pgagent.run()
