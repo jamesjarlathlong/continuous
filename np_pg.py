@@ -35,14 +35,13 @@ def statelist_to_df(statelist):
     return json_normalize([describe_state(state) for state in statelist])
 
 def discount_rewards(gamma, r):
-  """ take 1D float array of rewards and compute discounted reward """
-  discounted_r = np.zeros_like(r)
-  running_add = 0
-  for t in reversed(range(0, r.size)):
-    if r[t] != 0: running_add = 0 # reset the sum, since this was a game boundary (pong specific!)
-    running_add = running_add * gamma + r[t]
-    discounted_r[t] = running_add
-  return discounted_r
+    """ take 1D float array of rewards and compute discounted reward """
+    discounted_r = np.zeros_like(r)
+    running_add = 0
+    for t in reversed(range(0, r.size)):
+        running_add = running_add * gamma + r[t]
+        discounted_r[t] = running_add
+    return discounted_r
 
 def policy_forward(model, x):
     #if(len(x.shape)==1):
