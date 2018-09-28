@@ -8,9 +8,9 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 128
-    D = 8 # input dimensionality: 80x80 grid
-    O = int(D/2)
+    H = 64
+    D = 3 # input dimensionality: 80x80 grid
+    O = 2#int(D/2)
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -183,10 +183,11 @@ class PgLearner():
             for k in clf: grad_buffer[k]+=grad[k]           
             # perform rmsprop parameter update every batch_size episodes
             if e % self.batch_size == 0:
+                print('UPDATING')
                 for k,v in clf.items():
                     g = grad_buffer[k]
                     rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                    clf[k] += self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                    clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                     grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01

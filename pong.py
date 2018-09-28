@@ -10,7 +10,7 @@ def initialise_model(resumedir=None):
   # model initialization
     H = 200
     D = 80*80 # input dimensionality: 80x80 grid
-    O = 6
+    O = 3
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -108,10 +108,11 @@ class PgLearner():
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
                 cur_x = flatten_state(observation)
-                x = cur_x - prev_x if prev_x is not None else np.zeros(D)
+                x = cur_x - prev_x if prev_x is not None else np.zeros(80*80)
                 prev_x = cur_x
                 aprob, h = policy_forward(clf, x)
                 action = get_action(aprob)
+                #print('action: ', action)
                 # record various intermediates (needed later for backprop)
                 states.append(x) # observation
                 hiddens.append(h)
@@ -121,11 +122,12 @@ class PgLearner():
                 dlogps.append(dlogsoftmax)
                 #dlogps.append(action-aprob)
                 # step the environment and get new measurements
-                observation, reward, done, info = self.env.step(action)
+                observation, reward, done, info = self.env.step(action+2)
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
                 i+=1
             # stack together all inputs, hidden states, action gradients, and rewards for this episode
+            print(i, np.shape(states))
             stacked_states = np.vstack(states)
             stacked_hidden = np.vstack(hiddens)
             stacked_logps = np.vstack(dlogps)
@@ -141,20 +143,22 @@ class PgLearner():
             for k in clf: grad_buffer[k]+=grad[k]           
             # perform rmsprop parameter update every batch_size episodes
             if e % self.batch_size == 0:
+                print('updating grads')
                 for k,v in clf.items():
                     g = grad_buffer[k]
                     rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * g**2
-                    clf[k] += self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
+                    clf[k] -= self.learning_rate * g / (np.sqrt(rmsprop_cache[k]) + 1e-5)
                     grad_buffer[k] = np.zeros_like(v) # reset batch gradient buffer
                 # boring book-keeping
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
             print('resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward))
             if e % 100 == 0: pickle.dump(clf, open(self.modeldir, 'wb'))
             prev_x = None
+            done=False
             observation = self.env.reset()
             reward_sum = 0
         return e
 if __name__ == '__main__':
     env = gym.make("Pong-v0")
-    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=500,gamma=0.99, batch=1)
+    pgagent = PgLearner(env,learning_rate = 3e-3, modeldir='tmp/pong6', n_episodes=5000,gamma=0.99, batch=10)
     pgagent.run()
