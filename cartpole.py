@@ -8,7 +8,7 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 200
+    H = 10
     D = 4#80*80 # input dimensionality: 80x80 grid
     O = 2
     if resumedir:
@@ -159,5 +159,5 @@ class PgLearner():
         return e
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
-    pgagent = PgLearner(env,learning_rate = 1e-4, modeldir='tmp/pong6', n_episodes=5000,gamma=0.99, batch=1)
+    pgagent = PgLearner(env,learning_rate = 1e-2, modeldir='tmp/pong6', n_episodes=50000,gamma=0.99, batch=100)
     pgagent.run()
