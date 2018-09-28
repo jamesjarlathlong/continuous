@@ -9,8 +9,8 @@ from pandas.io.json import json_normalize
 def initialise_model(resumedir=None):
   # model initialization
     H = 200
-    D = 80*80 # input dimensionality: 80x80 grid
-    O = 6
+    D = 4#80*80 # input dimensionality: 80x80 grid
+    O = 2
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -91,7 +91,7 @@ class PgLearner():
         self.gamma = gamma
         self.batch_size = batch
         self.decay_rate = decay_rate
-    def run(self,render=True):
+    def run(self,render=False):
         clf = initialise_model()
         grad_buffer = { k : np.zeros_like(v) for k,v in clf.items() } # update buffers that add up gradients over a batch
         rmsprop_cache = { k : np.zeros_like(v) for k,v in clf.items() } # rmsprop memory
