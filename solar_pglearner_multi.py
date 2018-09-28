@@ -14,15 +14,15 @@ if __name__=='__main__':
     phase = sys.argv[2]
     recordname = '_'.join([modeldir,phase])
     print('experiment id:{}'.format(recordname))
-    #solarrecord = simple_solar_env.emulate_solar_ts(365)
-    solarfname = 'training_12'
-    solarrecord = solar_sensor_env.get_generated_power(solarfname)
+    solarrecord = simple_solar_env.emulate_solar_ts(365)
+    #solarfname = 'training_12'
+    #solarrecord = solar_sensor_env.get_generated_power(solarfname)
     register(
     id='SolarSensor-v0',
     entry_point='solar_sensor_env:SolarSensorEnv',
     kwargs = {'max_batt':10,'num_sensors':1,'deltat':3, 'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    pgagent = np_pg.PgLearner(env, learning_rate = 1e-4, modeldir=savemodel, n_episodes=500,gamma=0.99, batch=20,max_env_steps=365*8)
+    pgagent = np_pg.PgLearner(env, learning_rate = 1e-5, modeldir=savemodel, n_episodes=5000,gamma=0.99, batch=1,max_env_steps=365*8)
     pgagent.run()
     #agent.model.save('tmp/{}'.format(modeldir))

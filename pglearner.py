@@ -109,10 +109,12 @@ def random_burnin(env, action_lookup):
 def update_model(clf, states, actions, rewards):
     clf.train(input_fn=lambda:train_input_fn(states, actions, rewards))
     return clf
+def guru(clf, predx):
+    return clf.predict(predx)
 def get_action(clf, state):
     flatstate = statelist_to_df([state]).iloc[0].tolist()
     predict_x = tuple([[x] for x in flatstate])
-    pred = clf.predict(predict_x)
+    pred = guru(clf, predict_x)
     probabilities = [p.get('probabilities') for p in pred][0]
     action_labels = [idx for idx, el in enumerate(probabilities)]
     choice= np.random.choice(action_labels, p=probabilities)

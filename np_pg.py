@@ -8,9 +8,9 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 200
-    D = 4 # input dimensionality: 80x80 grid
-    O = int(D/2)
+    H = 64
+    D = 3 # input dimensionality: 80x80 grid
+    O = 2#int(D/2)
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
