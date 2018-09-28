@@ -138,7 +138,7 @@ class PgLearner():
             discounted_rewards = discount_rewards(self.gamma, stacked_rewards)
             # standardize the rewards to be unit normal (helps control the gradient estimator variance)
             discounted_rewards = discounted_rewards - np.mean(discounted_rewards)
-            discounted_rewards = discounted_rewards / np.std(discounted_rewards)
+            #discounted_rewards = discounted_rewards / np.std(discounted_rewards)
             stacked_logps *= discounted_rewards # modulate the gradient with advantage (PG magic happens right here.) 
             grad = policy_backward(clf, stacked_hidden, stacked_logps, stacked_states)
             for k in clf: grad_buffer[k]+=grad[k]           
