@@ -163,6 +163,7 @@ class PgLearner():
                 #dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
+                print('previous state {}, {}, action: {} , {},new state {} '.format(obvervation, x, action, self.action_lookup[action], observation))
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
                 i+=1
