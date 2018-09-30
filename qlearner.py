@@ -9,7 +9,9 @@ import copy
 import json
 import functools
 from gym.envs.registration import registry, register, make, spec
-
+def trim_state(state):
+    return {k:v[0:2] for k,v in state.items()}
+    
 def get_maxq(Q, state):
     state_q = Q.get(stringify(state),{})
     vals = state_q.values()
@@ -85,11 +87,11 @@ class QLearner():
             r =0
             while not done and i<self.env._max_episode_steps:
                 self.env.render()
-                action = self.choose_action(current_state, epsilon)
+                action = self.choose_action(trim_state(current_state), epsilon)
                 obs, reward, done, _ = self.env.step(action)
                 r+=reward
                 new_state = obs
-                self.update_q(current_state, action, reward, new_state, alpha)
+                self.update_q(trim_state(current_state), action, reward, trim_state(new_state), alpha)
                 current_state = new_state
                 i += 1
 
