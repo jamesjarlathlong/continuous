@@ -57,7 +57,7 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, s
     new_battery = max(new_battery,0)
     #print('added power in mWh: {}, used_power: {}, battery:{}, new_battery:{}'.format(added_power, used_power, battery, new_battery))
     normalised = new_battery*(maxbatt/battery_capacity)
-    return int(round(normalised))
+    return normalised#int(round(normalised))
 def runner(reducingseries,f):
     def wrapper(*args, **kwargs):
         current = reducingseries.pop(0)
@@ -174,8 +174,9 @@ class SolarSensorEnv(gym.Env):
         num_ts = int(24/deltat)
         self.num_ts = num_ts
         base_state = spaces.Tuple((spaces.Discrete(3),
-                                   spaces.Discrete(max_batt+1),
-                                   spaces.Discrete(max_batt+1)))#,
+                                   spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
+                                   spaces.Box(low = np.array([0]), high = np.array([max_batt+1]))
+                                   ))#,
                                    #spaces.Discrete(num_ts)
                                    #))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
