@@ -176,9 +176,8 @@ class SolarSensorEnv(gym.Env):
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
                                    spaces.Box(low = np.array([0]), high = np.array([max_batt+1]))
-                                   ))#,
-                                   #spaces.Discrete(num_ts)
-                                   #))
+                                   spaces.Discrete(num_ts)
+                                   ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
         self.sensors = random_graph.generate_network_coords(num_sensors)
         self.observation_space = spaces.Dict(obs_basis)
