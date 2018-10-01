@@ -124,9 +124,9 @@ def get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, action
     new_batteries = {k:batt_funs[k](battery_capacity, max_batt, max_t, v[0],v[1]) for
                          k, v in old_state.items()} 
     diffs = {k:batt_diff(v, old_state[k][1]) for k,v in new_batteries.items()}
-    #times = {k:new_time(max_t, v[3]) for k,v, in old_state.items()}
-    #new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
-    new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
+    times = {k:new_time(max_t, v[3]) for k,v, in old_state.items()}
+    new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
+    #new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
     return new_state
 def might_not_exist_read(filename):
     try:
