@@ -175,7 +175,7 @@ class SolarSensorEnv(gym.Env):
         self.num_ts = num_ts
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
-                                   spaces.Box(low = np.array([0]), high = np.array([max_batt+1]))
+                                   spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
                                    spaces.Discrete(num_ts)
                                    ))
         obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
