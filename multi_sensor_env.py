@@ -41,8 +41,11 @@ def get_reward(old_state):
     awake_reward = int(any(individual_rewards))
     how_many_nonzero = [v[1]>0 for k,v in old_state.items()]
     capable_rewards = sum(how_many_nonzero)/len(how_many_nonzero)
-    #print('awake,{}, capable,{}'.format(awake_reward, capable_reward))
-    return awake_reward*capable_rewards
+    #print('state,{}, awake,{}, capable,{}'.format(old_state, awake_reward, capable_rewards))
+    if awake_reward:
+        return capable_rewards
+    else: 
+        return -1
 class MultiSensorEnv(gym.Env):
     def __init__(self, num_sensors=2):
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
