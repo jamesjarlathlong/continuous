@@ -8,9 +8,9 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 32
-    D = 2 # input dimensionality: 80x80 grid
-    O = 2#int(D/2)
+    H = 64
+    D = 4 # input dimensionality: 80x80 grid
+    O = 4#int(D/2)
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -123,7 +123,7 @@ class PgBaseline():
             reward_sum = 0
         return e
 class PgLearner():
-    def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
+    def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.95, batch=1,max_env_steps=None):
         self.env = env
         self.modeldir = modeldir
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
@@ -163,7 +163,7 @@ class PgLearner():
                 #dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
-                print('previous state {}, {}, action: {} , {},new state {} '.format(obvervation, x, action, self.action_lookup[action], observation))
+                #print('previous state {}, action: {} , {},new state {} {}, reward {} '.format( x, action, self.action_lookup[action], observation, flatten_state(observation), reward))
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
                 i+=1
