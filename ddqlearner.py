@@ -12,7 +12,7 @@ import functools
 from gym.envs.registration import registry, register, make, spec
 # Deep Q-learning Agent
 def flatten_state(statedict):
-    vals = [statedict[k] for k in sorted(statedict)]
+    vals = [statedict[k][0::] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
     return np.reshape(flatvals, [1,len(flatvals)])
 def get_action_size(env):
@@ -30,7 +30,7 @@ class DDQNAgent:
         self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.9999
         self.learning_rate = 0.001
         if modeldir:
             self.model = load_model(modeldir)
