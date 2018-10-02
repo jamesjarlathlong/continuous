@@ -123,7 +123,7 @@ class PgBaseline():
             reward_sum = 0
         return e
 class PgLearner():
-    def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.99, batch=1,max_env_steps=None):
+    def __init__(self,env, learning_rate,n_episodes, gamma,modeldir, decay_rate=0.95, batch=1,max_env_steps=None):
         self.env = env
         self.modeldir = modeldir
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
@@ -163,7 +163,6 @@ class PgLearner():
                 #dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
-                #print('previous state {}, {}, action: {} , {},new state {} '.format(obvervation, x, action, self.action_lookup[action], observation))
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
                 i+=1

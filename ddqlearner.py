@@ -15,6 +15,12 @@ def flatten_state(statedict):
     vals = [statedict[k][0::] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
     return np.reshape(flatvals, [1,len(flatvals)])
+def flatten_state_withtime(statedict):
+    time = statedict['S0'][3]
+    vals = [statedict[k][0:3] for k in sorted(statedict)]
+    flatvals = list(itertools.chain(*vals))
+    flatvals.append(time)
+    return np.reshape(flatvals, [1,len(flatvals)])    
 def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
@@ -22,7 +28,7 @@ class DDQNAgent:
     def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None):
         self.env = env
         self.n_episodes = n_episodes
-        self.state_size = len(flatten_state(env.observation_space.sample())[0])
+        self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
         self.action_size = get_action_size(self.env)
         print(self.action_size, self.state_size)
         self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
@@ -42,8 +48,9 @@ class DDQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(28, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(28, activation='relu'))
+        model.add(Dense(128, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(128, activation='relu'))
+        model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
@@ -75,25 +82,26 @@ class DDQNAgent:
             print('#######New episode#############', self.epsilon)
             done=False
             observation = self.env.reset()
-            prev_state = flatten_state(observation)
+            prev_state = flatten_state_withtime(observation)
             reward_sum = 0
             i=0
             while not done and i<self.env._max_episode_steps:
+                #print(i)
                 if render: self.env.render()
                 action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
                 next_state, reward, done, info = self.env.step(self.action_lookup[action])
-                flat_state = flatten_state(next_state)
+                flat_state = flatten_state_withtime(next_state)
                 # Remember the previous state, action, reward, and done
                 self.remember(prev_state, action, reward, flat_state, done)
                 # make next_state the new current state for the next frame.
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(self.memory) > 32:
+                if len(self.memory) > 8:
                     #print(i)
-                    self.replay(32)
+                    self.replay(8)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
             self.update_target_model()
