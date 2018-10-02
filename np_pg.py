@@ -9,8 +9,8 @@ from pandas.io.json import json_normalize
 def initialise_model(resumedir=None):
   # model initialization
     H = 32
-    D = 4 # input dimensionality: 80x80 grid
-    O = 4#int(D/2)
+    D = 2 # input dimensionality: 80x80 grid
+    O = 2#int(D/2)
     if resumedir:
         model = pickle.load(open(resumedir, 'rb'))
     else:
@@ -163,7 +163,7 @@ class PgLearner():
                 #dlogps.append(action-aprob)
                 # step the environment and get new measurements
                 observation, reward, done, info = self.env.step(self.action_lookup[action])
-                print('previous state {}, {}, action: {} , {},new state {} '.format(obvervation, x, action, self.action_lookup[action], observation))
+                #print('previous state {}, {}, action: {} , {},new state {} '.format(obvervation, x, action, self.action_lookup[action], observation))
                 reward_sum += reward
                 rewards.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
                 i+=1

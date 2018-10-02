@@ -24,6 +24,6 @@ if __name__=='__main__':
     kwargs = {'max_batt':10,'num_sensors':4, 'deltat':3,'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarSensor-v0')
-    agent = ddqlearner.DDQNAgent(env,n_episodes = 250, max_env_steps=28*8, modeldir=loadmodel)
+    agent = ddqlearner.DDQNAgent(env,n_episodes = 500, max_env_steps=28*8, modeldir=loadmodel)
     agent.run()
     agent.model.save('tmp/{}'.format(modeldir))
