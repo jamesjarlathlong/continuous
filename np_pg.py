@@ -8,7 +8,7 @@ from pandas.io.json import json_normalize
 
 def initialise_model(resumedir=None):
   # model initialization
-    H = 64
+    H = 32
     D = 4 # input dimensionality: 80x80 grid
     O = 4#int(D/2)
     if resumedir:
