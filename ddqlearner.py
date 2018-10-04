@@ -17,9 +17,9 @@ def flatten_state(statedict):
     return np.reshape(flatvals, [1,len(flatvals)])
 def flatten_state_withtime(statedict):
     time = statedict['S0'][3]
-    vals = [statedict[k][0:3] for k in sorted(statedict)]
+    vals = [statedict[k][0::] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
-    flatvals.append(time)
+    #flatvals.append(time)
     return np.reshape(flatvals, [1,len(flatvals)])    
 def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
@@ -36,7 +36,7 @@ class DDQNAgent:
         self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.9999
+        self.epsilon_decay = 0.999995
         self.learning_rate = 0.0001
         if modeldir:
             self.model = load_model(modeldir)
@@ -48,9 +48,9 @@ class DDQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(128, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(128, activation='relu'))
-        model.add(Dense(128, activation='relu'))
+        model.add(Dense(64, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(64, activation='relu'))
+        #model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
@@ -99,9 +99,9 @@ class DDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(self.memory) > 8:
+                if len(self.memory) > 32:
                     #print(i)
-                    self.replay(8)
+                    self.replay(32)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
             self.update_target_model()
