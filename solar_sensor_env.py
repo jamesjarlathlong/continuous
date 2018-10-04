@@ -112,7 +112,8 @@ def daynumber_to_monthnumber(daynumber):
 
 def calculate_month(step_number, steps_per_day):
     day_number = math.floor(step_number/steps_per_day)
-    return daynumber_to_monthnumber(day_number)
+    bounded_day_number = day_number%365
+    return daynumber_to_monthnumber(bounded_day_number)
 def random_start_generator(deltat):
     #deltat = 0.5#hours
     aday = 24/deltat
