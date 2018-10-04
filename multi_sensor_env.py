@@ -18,6 +18,9 @@ def zip_3dicts(statusd, battd, diffd):
 def zip_4dicts(statusd, battd, diffd, timed):
     full_state = {k:(v, battd[k], diffd[k], timed[k]) for k,v in statusd.items()}
     return full_state
+def zip_5dicts(statusd, battd, diffd, timed, monthd):
+    full_state = {k:(v, battd[k], diffd[k], timed[k], monthd[k]) for k,v in statusd.items()}
+    return full_state
 batt_evolution = functools.partial(sensor_env.battery_dynamics,10)
 def what_is_noop(state):
     status = state[0]
