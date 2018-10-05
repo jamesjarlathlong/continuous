@@ -225,7 +225,7 @@ class SolarSensorEnv(gym.Env):
         self.record = []
         self.rewards = []
     def base_state(self):
-        return {k:(set_initial_status(k),max_batt,0,0) for k in self.obs_basis}
+        return {k:(set_initial_status(k),self.max_batt,0,0) for k in self.obs_basis}
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
