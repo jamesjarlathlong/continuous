@@ -99,9 +99,9 @@ class DDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(self.memory) > 32:
+                if len(self.memory) > 8:
                     #print(i)
-                    self.replay(32)
+                    self.replay(8)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
             self.update_target_model()
