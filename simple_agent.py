@@ -13,7 +13,7 @@ class SimpleAgent(object):
         #recharge if battery gets below 3 
         # status 0: On 1: PreSleep 2: Sleep
         #print(observation)
-        status, battery, diff, t = observation['S0']
+        status, battery, diff = observation['S0']
         if battery<2:
             return wrap_action(0,1)#go to sleep
         elif battery>4:#self.env.max_batt-80:
@@ -62,7 +62,7 @@ class SimpleNetworkAgent(object):
         if active_sensors:
             sensor = active_sensors[0]
             sensorname, sensornum = sensor
-            status, battery, diff, t = observation[sensor]
+            status, battery, diff = observation[sensor]
             actionnum = 1 if battery <99 else 0
             wrapped_action = wrap_action(int(sensornum), actionnum)
         else:
