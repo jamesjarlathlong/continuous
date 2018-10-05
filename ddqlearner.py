@@ -25,7 +25,7 @@ def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
 class DDQNAgent:
-    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None):
+    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
@@ -36,8 +36,8 @@ class DDQNAgent:
         self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999995
-        self.learning_rate = 0.0001
+        self.epsilon_decay = decay_rate
+        self.learning_rate = learning_rate
         if modeldir:
             self.model = load_model(modeldir)
         else:
@@ -99,9 +99,9 @@ class DDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(self.memory) > 32:
+                if len(self.memory) > 8:
                     #print(i)
-                    self.replay(32)
+                    self.replay(8)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
             self.update_target_model()
