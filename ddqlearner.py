@@ -25,7 +25,7 @@ def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
 class DDQNAgent:
-    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995):
+    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995, layer_width=64):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
@@ -38,6 +38,7 @@ class DDQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = decay_rate
         self.learning_rate = learning_rate
+        self.layer_width = layer_width
         if modeldir:
             self.model = load_model(modeldir)
         else:
@@ -48,8 +49,8 @@ class DDQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(64, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(64, activation='relu'))
+        model.add(Dense(self.layer_width, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(self.layer_width, activation='relu'))
         #model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse',
