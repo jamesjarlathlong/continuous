@@ -8,7 +8,7 @@ from keras.optimizers import Adam
 from keras.models import load_model
 import itertools
 import functools
-
+import multi_sensor_env
 from gym.envs.registration import registry, register, make, spec
 # Deep Q-learning Agent
 def flatten_state(statedict):
@@ -24,14 +24,41 @@ def flatten_state_withtime(statedict):
 def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
+def get_alt_action_size(env):
+    num_sensors =  env.action_space.spaces[0].n
+    return num_sensors + 1
+def action_lookup(env, state, action_number):
+    lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
+    return lookup[action_number]
+def get_toggle_action(state):
+    #0 wakeup, 1 go to sleep
+    status = state[0]
+    return 1 if status ==0 else 0 #sleep if awake, else wakeup
+stringify = lambda num: 'S'+str(num)
+def alt_action_lookup(env, state, action_number):
+    """state is like{'S0': (0, 10, 0, 0), 'S1': (2, 10, 0, 0)}
+    action_number is an int, 0 means toggle sensor 0, 1 toggle sensor 1, -1 noop
+    so 0 -> (0, toggle)
+    """
+    num_actions = get_alt_action_size(env)
+    num_sensors = num_actions - 1
+    relevant_sensor = action_number if action_number < num_sensors else None
+    if relevant_sensor!=None:
+        opposite_action = get_toggle_action(state[stringify(relevant_sensor)])
+        return (relevant_sensor, opposite_action)
+    else:
+        #last action is a noop, all others are togglers
+        return (0,multi_sensor_env.what_is_noop(state['S0']))
+
+
 class DDQNAgent:
     def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995, layer_width=64):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
-        self.action_size = get_action_size(self.env)
+        self.action_size = get_alt_action_size(self.env)
         print(self.action_size, self.state_size)
-        self.action_lookup = list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
+        self.action_lookup = functools.partial(alt_action_lookup,env)#list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         self.memory = deque(maxlen=2000)
         self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
@@ -92,7 +119,7 @@ class DDQNAgent:
                 action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
-                next_state, reward, done, info = self.env.step(self.action_lookup[action])
+                next_state, reward, done, info = self.env.step(self.action_lookup(action,prev_state))
                 flat_state = flatten_state_withtime(next_state)
                 # Remember the previous state, action, reward, and done
                 self.remember(prev_state, action, reward, flat_state, done)
