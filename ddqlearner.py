@@ -42,9 +42,11 @@ def alt_action_lookup(env, state, action_number):
     """
     num_actions = get_alt_action_size(env)
     num_sensors = num_actions - 1
+    
     relevant_sensor = action_number if action_number < num_sensors else None
     if relevant_sensor!=None:
-        opposite_action = get_toggle_action(state[stringify(relevant_sensor)])
+        sensor_name = stringify(relevant_sensor)
+        opposite_action = get_toggle_action(state[sensor_name])
         return (relevant_sensor, opposite_action)
     else:
         #last action is a noop, all others are togglers
@@ -118,8 +120,9 @@ class DDQNAgent:
                 action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
-                next_state, reward, done, info = self.env.step(self.action_lookup(action,prev_state))
-                flat_state = flatten_state_withtime(next_state)
+                print('observation: {}, action pair {},{}'.format(observation, action, self.action_lookup(observation, action)))
+                observation, reward, done, info = self.env.step(self.action_lookup(observation, action))
+                flat_state = flatten_state_withtime(observation)
                 # Remember the previous state, action, reward, and done
                 self.remember(prev_state, action, reward, flat_state, done)
                 # make next_state the new current state for the next frame.
