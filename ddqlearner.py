@@ -121,7 +121,6 @@ class DDQNAgent:
                 action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
-                print('observation: {}, action pair {},{}'.format(observation, action, self.action_lookup(observation, action)))
                 observation, reward, done, info = self.env.step(self.action_lookup(observation, action))
                 flat_state = flatten_state_withtime(observation)
                 # Remember the previous state, action, reward, and done
