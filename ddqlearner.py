@@ -17,7 +17,7 @@ def flatten_state(statedict):
     return np.reshape(flatvals, [1,len(flatvals)])
 def flatten_state_withtime(statedict):
     time = statedict['S0'][3]
-    month = statdict['S0'][4]
+    month = statedict['S0'][4]
     vals = [statedict[k][0:3] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
     flatvals.append(time)
