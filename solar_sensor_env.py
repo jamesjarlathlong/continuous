@@ -82,7 +82,7 @@ def add_noise(series):
     noise = np.random.normal(0, 0.01, len(series))
     return series+noise
 def full_perturber(sensors, timeseries):
-    #threedperturbation = random_fields.gpu_gaussian_random_field(size=30,scale=2, length=1)
+    #threedperturbation = random_fields.gpu_gaussian_random_field(size=32,scale=2, length=1)
     #factors = get_sensor_perturbations(sensors, threedperturbation)
     #print(factors)
     factors = [np.array([0]) for _ in sensors]
@@ -114,10 +114,10 @@ def calculate_month(step_number, steps_per_day):
     day_number = math.floor(step_number/steps_per_day)
     bounded_day_number = day_number%365
     return daynumber_to_monthnumber(bounded_day_number)
-def random_start_generator(deltat):
+def random_start_generator(deltat, num_days = 365):
     #deltat = 0.5#hours
     aday = 24/deltat
-    num_steps = 365*aday
+    num_steps = num_days*aday
     return rounder(np.random.randint(0, num_steps), base=aday)
 def batt_diff(new_batt, old_batt):
     return new_batt-old_batt
@@ -200,13 +200,14 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat, recordname=get_random_name()):
+    def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat, recordname=get_random_name(), num_days = 365):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
         self.deltat = deltat
         num_ts = int(24/deltat)
         self.num_ts = num_ts
+        self.num_days = num_days
         base_state = spaces.Tuple((spaces.Discrete(3),
                                    spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
                                    spaces.Box(low = np.array([0]), high = np.array([max_batt+1])),
@@ -249,7 +250,7 @@ class SolarSensorEnv(gym.Env):
     def reset(self):
         self.reward = 0
         self.sensors = random_graph.generate_network_coords(len(self.sensors))
-        randomstart = random_start_generator(self.deltat)
+        randomstart = random_start_generator(self.deltat, self.num_days)
         self.startstep = randomstart
         self.steps_taken = 0
         self.state = self.base_state()
@@ -273,7 +274,7 @@ class SolarSensorEnv(gym.Env):
         previous_rewards = might_not_exist_read(self.rewardfname)
         previous_rewards['data'].append(sum(self.rewards))
         with open(self.rewardfname, 'w') as f:
-            print('reward: {}'.format(self.rewardfname))
+            #print('reward: {}'.format(self.rewardfname))
             json.dump(previous_rewards,f)
         self.rewards = []
         return self.state
@@ -281,28 +282,7 @@ class SolarSensorEnv(gym.Env):
         self.record.append(self.state)
         self.rewards.append(self.reward)
 
-def graph_reward(old_state, sensors):
-    """sensors is a list of sensor coords,assumed to be associated in order with the 
-    sensor names"""
-    active_sensors = [k for k,v in old_state.items() if sensor_env.get_reward(v)]
-    connectivity = random_graph.is_connected_to_active(sensors, active_sensors)
-    return len([v for k,v in connectivity.items()])/(len(connectivity))
-class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
-    def step(self, action):
-        assert self.action_space.contains(action)
-        old_state = self.state
-        reward = multi_sensor_env.get_reward({k: v[0:2] for k,v 
-                                             in old_state.items()})
-        #print('getting reward,{}:{}'.format(state, reward))
-        new_state = get_new_state(self.episode_battery_dynamics, 
-                                  self.battery_capacity,
-                                  self.max_batt,self.num_ts, old_state, action)
-        #if new_battery == 0:
-        #    done=True
-        #else: 
-        self.state = new_state
-        self.reward = reward
-        return new_state, reward, False, {}
+
 class SolarTimeSensorEnv(SolarSensorEnv, gym.Env):
     def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat, recordname=get_random_name()):
         self.max_batt = max_batt
@@ -353,4 +333,42 @@ class SolarTimeSensorEnv(SolarSensorEnv, gym.Env):
         self.reward = reward
         self.steps_taken+=1
         return new_state, reward, False, {}
-
+"""
+def get_reward(old_state):
+    individual_rewards = [sensor_env.get_reward(v) for k,v in old_state.items()]
+    awake_reward = int(any(individual_rewards))
+    how_many_nonzero = [v[1]>0 for k,v in old_state.items()]
+    capable_rewards = sum(how_many_nonzero)/len(how_many_nonzero)
+    #print('state,{}, awake,{}, capable,{}'.format(old_state, awake_reward, capable_rewards))
+    if awake_reward:
+        return capable_rewards
+    else: 
+        return -1
+"""
+def graph_reward(old_state, sensors):
+    """sensors is a list of sensor coords,assumed to be associated in order with the 
+    sensor names"""
+    active_sensors = [k for k,v in old_state.items() if sensor_env.get_reward(v[0:2])]
+    connectivity = random_graph.is_connected_to_active(sensors, active_sensors)
+    capable_rewards =  len([v for k,v in connectivity.items() if v])/(len(connectivity))
+    print('connectivity {},{}'.format(connectivity, capable_rewards))
+    if active_sensors:
+        return capable_rewards
+    else:
+        return -1
+class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
+    def step(self, action):
+        assert self.action_space.contains(action)
+        old_state = self.state
+        reward = multi_sensor_env.graph_reward({k: v[0:2] for k,v 
+                                             in old_state.items()})
+        #print('getting reward,{}:{}'.format(state, reward))
+        new_state = get_new_state(self.episode_battery_dynamics, 
+                                  self.battery_capacity,
+                                  self.max_batt,self.num_ts, old_state, action)
+        #if new_battery == 0:
+        #    done=True
+        #else: 
+        self.state = new_state
+        self.reward = reward
+        return new_state, reward, False, {}
