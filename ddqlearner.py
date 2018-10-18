@@ -5,6 +5,7 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras import backend as K
 from keras.models import load_model
 import itertools
 import functools
@@ -77,6 +78,12 @@ class DDQNAgent:
         self.target_model = self._build_model()
         self.update_target_model()
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
+    def _huber_loss(self, y_true, y_pred, clip_delta=1.0):
+        error = y_true - y_pred
+        cond  = K.abs(error) <= clip_delta
+        squared_loss = 0.5 * K.square(error)
+        quadratic_loss = 0.5 * K.square(clip_delta) + clip_delta * (K.abs(error) - clip_delta)
+        return K.mean(tf.where(cond, squared_loss, quadratic_loss))
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
@@ -84,7 +91,7 @@ class DDQNAgent:
         model.add(Dense(self.layer_width, activation='relu'))
         #model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse',
+        model.compile(loss=self._huber_loss,
                       optimizer=Adam(lr=self.learning_rate))
         return model
     def update_target_model(self):
