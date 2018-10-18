@@ -13,6 +13,9 @@ if __name__=='__main__':
     modeldir = sys.argv[1] if sys.argv[1] else ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
     loadmodel = 'tmp/'+modeldir if sys.argv[1] else None
     phase = sys.argv[2]
+    learning_rate = float(sys.argv[3])
+    layer_width = int(sys.argv[4])
+    num_sensors = int(sys.argv[5])
     recordname = '_'.join([modeldir,phase])
     print('experiment id:{}'.format(recordname))
     #solarrecord = simple_solar_env.emulate_solar_ts(365)
@@ -21,9 +24,9 @@ if __name__=='__main__':
     register(
     id='SolarTimeSensor-v0',
     entry_point='solar_sensor_env:SolarTimeSensorEnv',
-    kwargs = {'max_batt':10,'num_sensors':2, 'deltat':3,'solarpowerrecord':solarrecord, 'recordname':recordname}
+    kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':3,'solarpowerrecord':solarrecord, 'recordname':recordname}
     )
     env = gym.make('SolarTimeSensor-v0')
-    agent = ddqlearner.DDQNAgent(env,n_episodes = 1000, max_env_steps=365*8, modeldir=loadmodel)
+    agent = ddqlearner.DDQNAgent(env,n_episodes = 2500, max_env_steps=365*8, modeldir=loadmodel,decay_rate = 0.9999990, learning_rate = learning_rate, layer_width=layer_width)
     agent.run()
     agent.model.save('tmp/{}'.format(modeldir))
