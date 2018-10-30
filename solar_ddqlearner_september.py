@@ -1,4 +1,4 @@
-import ddqlearnermonth as ddqlearner
+import ddqlearner as ddqlearner
 import gym
 from gym.envs.registration import registry, register, make, spec
 import os
@@ -23,9 +23,9 @@ if __name__=='__main__':
     num_sensors = int(sys.argv[5])
     recordname = '_'.join([modeldir,phase])
     print('experiment id:{}'.format(recordname))
-    #solarrecord = simple_solar_env.emulate_solar_ts(365)
-    solarfname = 'training_12'
-    solarrecord = solar_sensor_env.get_generated_power(solarfname)
+    solarrecord = simple_solar_env.emulate_solar_ts(365)
+    #solarfname = 'training_12'
+    #solarrecord = solar_sensor_env.get_generated_power(solarfname)
     monthrecord = get_month(solarrecord,6)
     register(
     id='SolarSensor-v0',
@@ -35,6 +35,6 @@ if __name__=='__main__':
     env = gym.make('SolarSensor-v0')
     #naiveagent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 30*8)
     #naiveagent.run()
-    agent = ddqlearner.DDQNAgent(env,n_episodes = 10000, max_env_steps=30*8, modeldir=loadmodel,decay_rate = 0.9999990, learning_rate = learning_rate, layer_width=layer_width)
+    agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.9999995, learning_rate = learning_rate, layer_width=layer_width)
     agent.run()
     agent.model.save('tmp/{}'.format(modeldir))
