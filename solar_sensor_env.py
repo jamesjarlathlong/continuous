@@ -48,7 +48,7 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, s
     added_power =  generated_power*1000*timeperiod #mWh - generated is avg power in a timeperiod
     
     max_possible = battery_capacity*discharge_voltage #mAh e.g. 2000mAh times 3.7 volts = 7400mW 
-    on_power = 56+45+35#mAh pyboard plus digimesh plus accel
+    on_power = 66+45+35#mAh pyboard plus digimesh plus accel
     off_power = 45#mAh
     if status == 2:#sleeping
         used_power = (off_power*discharge_voltage*timeperiod)
@@ -79,13 +79,13 @@ def random_perturber(num_sensors, timeseries):
 def get_sensor_perturbations(sensors, perturbation):
     return [perturbation[round(i[0]),round(i[1]),:] for i in sensors]
 def add_noise(series):
-    noise = np.random.normal(0, 0.01, len(series))
-    return series+noise
+    noise = np.random.normal(0, 0.05, len(series))
+    return series#+noise
 def full_perturber(sensors, timeseries):
-    #threedperturbation = random_fields.gpu_gaussian_random_field(size=32,scale=2, length=1)
-    #factors = get_sensor_perturbations(sensors, threedperturbation)
+    threedperturbation = random_fields.gpu_gaussian_random_field(size=33,scale=2, length=1)
+    factors = get_sensor_perturbations(sensors, threedperturbation)
     #print(factors)
-    factors = [np.array([0]) for _ in sensors]
+    #factors = [np.array([0]) for _ in sensors]
     res = []
     for f in factors:
         #print('FACTOR: ', f[0])
@@ -181,7 +181,7 @@ def downsample(series, factor=1):
     chunks = grouper(series, factor)
     return list(map(avg, chunks))
 def get_generated_power(solarfilename):
-    cell_properties = {'system_capacity':2e-3 , 'azimuth':90 , 'tilt':20}
+    cell_properties = {'system_capacity':2e-3 , 'azimuth':90 , 'tilt':5}
     df = pd.read_pickle(solarfilename+'.pkl')
     with open(solarfilename+'.metadata.json') as f:
         meta = {k:converter(v) for k,v in json.load(f).items()}
@@ -214,7 +214,7 @@ class SolarSensorEnv(gym.Env):
                                    spaces.Discrete(num_ts)
                                    ))
         self.obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
-        self.sensors = random_graph.generate_network_coords(num_sensors)
+        self.sensors = random_graph.generate_sorted_network_coords(num_sensors)
         self.observation_space = spaces.Dict(self.obs_basis)
         self.state = self.base_state()
         self.seed()
@@ -250,7 +250,7 @@ class SolarSensorEnv(gym.Env):
     def reset(self):
         self.reward = 0
         self.sensors = random_graph.generate_network_coords(len(self.sensors))
-        randomstart = random_start_generator(self.deltat, self.num_days)
+        randomstart = 0#random_start_generator(self.deltat, self.num_days)
         self.startstep = randomstart
         self.steps_taken = 0
         self.state = self.base_state()
@@ -351,7 +351,7 @@ def graph_reward(old_state, sensors):
     active_sensors = [k for k,v in old_state.items() if sensor_env.get_reward(v[0:2])]
     connectivity = random_graph.is_connected_to_active(sensors, active_sensors)
     capable_rewards =  len([v for k,v in connectivity.items() if v])/(len(connectivity))
-    print('connectivity {},{}'.format(connectivity, capable_rewards))
+    #print('connectivity {},{}'.format(connectivity, capable_rewards))
     if active_sensors:
         return capable_rewards
     else:
@@ -360,8 +360,9 @@ class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
-        reward = multi_sensor_env.graph_reward({k: v[0:2] for k,v 
-                                             in old_state.items()})
+        reward = graph_reward({k: v[0:2] for k,v 
+                                             in old_state.items()},
+                             self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
         new_state = get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
