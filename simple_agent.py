@@ -63,7 +63,7 @@ class SimpleNetworkAgent(object):
         if active_sensors:
             sensor = active_sensors[0]
             sensorname, sensornum = sensor
-            status, battery, diff,t,month = observation[sensor]
+            status, battery, diff,t = observation[sensor]
             actionnum = 1 if battery <8 else 0
             wrapped_action = wrap_action(int(sensornum), actionnum)
         else:
