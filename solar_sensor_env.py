@@ -48,7 +48,7 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, s
     added_power =  generated_power*1000*timeperiod #mWh - generated is avg power in a timeperiod
     
     max_possible = battery_capacity*discharge_voltage #mAh e.g. 2000mAh times 3.7 volts = 7400mW 
-    on_power = 66+45+35#mAh pyboard plus digimesh plus accel
+    on_power = 56+45+15#mAh pyboard plus digimesh plus accel
     off_power = 45#mAh
     if status == 2:#sleeping
         used_power = (off_power*discharge_voltage*timeperiod)

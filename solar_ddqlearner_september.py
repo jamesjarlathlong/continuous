@@ -28,15 +28,15 @@ if __name__=='__main__':
     solarrecord = solar_sensor_env.get_generated_power(solarfname)
     monthrecord = get_month(solarrecord,0)
     register(
-    id='SolarSensor-v0',
-    entry_point='solar_sensor_env:SolarSensorEnv',
+    id='SolarGraphSensor-v0',
+    entry_point='solar_sensor_env:SolarGraphSensorEnv',
     kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':3,'solarpowerrecord':monthrecord, 'recordname':recordname}
     )
-    env = gym.make('SolarSensor-v0')
-    #naiveagent = simple_agent.SimpleNetworkAgent(env, n_episodes = 3, max_env_steps = 300*8)
-    #naiveagent.run()
+    env = gym.make('SolarGraphSensor-v0')
     agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.999999, learning_rate = learning_rate, layer_width=layer_width)
     #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
 
-    agent.run()
-    agent.model.save('tmp/{}'.format(modeldir))
+    #agent.run()
+    #agent.model.save('tmp/{}'.format(modeldir))
+    naiveagent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 300*8, num_on=8)
+    naiveagent.run()
