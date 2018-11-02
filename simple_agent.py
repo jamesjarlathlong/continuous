@@ -45,31 +45,39 @@ def find_active(observation):
     #if any sensor is active return the sensorname
     #else return None
     active_sensor = [k for k,v in observation.items() if v[0]==0]
-    assert len(active_sensor)<=1
+    #assert len(active_sensor)<=1
     return active_sensor
     
 class SimpleNetworkAgent(object):
     """The world's simplest agent!"""
-    def __init__(self, env,n_episodes=1, max_env_steps = int(365*24/0.5)):
+    def __init__(self, env,n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
         self.env = env
         self.n_episodes = n_episodes
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         self.env.reset()
         self.full_record = []
+        self.num_on = num_on
     def act(self, observation):
         #recharge if battery gets below 3 
         # status 0: On 1: PreSleep 2: Sleep
         active_sensors = find_active(observation)
-        if active_sensors:
-            sensor = active_sensors[0]
-            sensorname, sensornum = sensor
-            status, battery, diff,t,month = observation[sensor]
-            actionnum = 1 if battery <8 else 0
+        if len(active_sensors)>=self.num_on:
+            #here we check if the battery of any of these is too low
+            #and send it to sleep if so
+            min_active_sensor = min([(k,v) for k,v
+                                     in observation.items()
+                                    if k in active_sensors], key = lambda t: t[1][1])
+            sensor = min_active_sensor[0]#active_sensors[0]
+            sensorname, sensornum = sensor[0], sensor[1::]
+            status, battery, diff,t = observation[sensor]
+            actionnum = 1 if battery <9 else 0
             wrapped_action = wrap_action(int(sensornum), actionnum)
         else:
             sleepingsensors = [(k,v) for k,v in observation.items() if v[0]==2]
             maxbattsensor = max(sleepingsensors, key = lambda s: s[1][1])
-            sensornum = int(maxbattsensor[0][1])
+            sensornum = int(maxbattsensor[0].strip('S'))#int(maxbattsensor[0][1])
+            #print(sensornum)
+            #print('waking up, ',maxbattsensor, sensornum, observation)
             wrapped_action = wrap_action(sensornum, 0)#wakeup
         return wrapped_action
     def run(self, render=True):
