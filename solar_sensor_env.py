@@ -77,7 +77,7 @@ def random_perturber(num_sensors, timeseries):
         res.append(list(np.multiply(timeseries, perturbation).real))
     return res
 def get_sensor_perturbations(sensors, perturbation):
-    return [perturbation[round(i[0]),round(i[1]),:] for i in sensors]
+    return [perturbation[int(round(i[0])),int(round(i[1])),:] for i in sensors]
 def add_noise(series):
     noise = np.random.normal(0, 0.05, len(series))
     return series#+noise
