@@ -32,7 +32,7 @@ if __name__=='__main__':
     id='SolarGraphSensor-v0',
     entry_point='solar_sensor_env:SolarGraphSensorEnv',
     kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':3,
-              'solarpowerrecord':monthrecord, 'recordname':recordname,'coordinate_generator':random_graph.generate_sorted_grid_coords}
+              'solarpowerrecord':monthrecord, 'recordname':recordname,'coordinate_generator':random_graph.generate_sorted_network_coords}
     )
     env = gym.make('SolarGraphSensor-v0')
     #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.999999, learning_rate = learning_rate, layer_width=layer_width)
