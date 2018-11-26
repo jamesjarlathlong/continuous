@@ -27,7 +27,7 @@ if __name__=='__main__':
     solarrecord = simple_solar_env.emulate_solar_ts(365)
     solarfname = 'training_12'
     solarrecord = solar_sensor_env.get_generated_power(solarfname)
-    monthrecord = get_month(solarrecord,0)
+    monthrecord = get_month(solarrecord,8)
     register(
     id='SolarGraphSensor-v0',
     entry_point='solar_sensor_env:SolarGraphSensorEnv',
