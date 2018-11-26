@@ -4,6 +4,17 @@ import scipy
 import itertools
 import hilbert_curve
 import functools
+import math
+def generate_grid_coords(num_sensors, boundary):
+    num_spaces = math.sqrt(num_sensors)
+    assert (num_spaces-int(num_spaces)) == 0
+    oned = np.linspace(start=0,stop=boundary,num=num_spaces)
+    twod = list(itertools.product(*[oned,oned]))
+    return twod
+def generate_sorted_grid_coords(num_sensors, boundary_power_of_2=5):
+    grid_size = 2**boundary_power_of_2-1
+    coords = generate_grid_coords(num_sensors, grid_size)
+    return sort_coords(coords, boundary_power_of_2)
 def generate_sorted_network_coords(num_sensors, grid_power_of_2 = 5):
     grid_size = 2**grid_power_of_2-1
     network_coords = generate_network_coords(num_sensors, size = grid_size)
@@ -11,7 +22,7 @@ def generate_sorted_network_coords(num_sensors, grid_power_of_2 = 5):
 def sort_coords(network_coords, grid_power_of_2=5):
     hilbert = functools.partial(hilbert_curve.point_to_hilbert,grid_power_of_2)
     #normalised = [(round(x), round(y)) for x, y in network_coords]
-    inorder = sorted(network_coords, key = lambda i: hilbert(round(i[0]), round(i[1])))
+    inorder = sorted(network_coords, key = lambda i: hilbert(int(round(i[0])), int(round(i[1]))))
     return inorder
 def generate_random_coords(size):
     return (np.random.uniform(0, size), np.random.uniform(0,size))

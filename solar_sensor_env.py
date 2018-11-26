@@ -200,7 +200,8 @@ class SolarSensorEnv(gym.Env):
     2: Sleep
     If the Sensor remains on, you win a reward of 1.
     """
-    def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat, recordname=get_random_name(), num_days = 365):
+    def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat,
+                 recordname=get_random_name(), num_days = 365, coordinate_generator=random_graph.generate_sorted_network_coords):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
@@ -214,7 +215,8 @@ class SolarSensorEnv(gym.Env):
                                    spaces.Discrete(num_ts)
                                    ))
         self.obs_basis = {'S'+str(i):base_state for i in range(num_sensors)}
-        self.sensors = random_graph.generate_sorted_network_coords(num_sensors)
+        self.coordinate_generator=coordinate_generator
+        self.sensors = coordinate_generator(num_sensors)#random_graph.generate_sorted_network_coords(num_sensors)
         self.observation_space = spaces.Dict(self.obs_basis)
         self.state = self.base_state()
         self.seed()
@@ -249,7 +251,7 @@ class SolarSensorEnv(gym.Env):
         return new_state, reward, False, {}
     def reset(self):
         self.reward = 0
-        self.sensors = random_graph.generate_network_coords(len(self.sensors))
+        self.sensors = self.coordinate_generator(len(self.sensors))#random_graph.generate_network_coords(len(self.sensors))
         randomstart = 0#random_start_generator(self.deltat, self.num_days)
         self.startstep = randomstart
         self.steps_taken = 0
