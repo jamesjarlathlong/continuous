@@ -43,7 +43,8 @@ def translate_vector_form(num_items, vector):
     return res
 def soft_geometric_graph(sensors, r_char=32):
     connector = functools.partial(connection_probability, r_char)
-    connections = coin_flip(connector(pairwise_distances(sensors)))
+    probabilities = connector(pairwise_distances(sensors))
+    connections = [coin_flip(i) for i in probabilities]
     readable = translate_vector_form(len(sensors), connections)
     return [i for i, val in readable.items() if val]
 def get_adjacency_list(graph):
