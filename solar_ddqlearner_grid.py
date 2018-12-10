@@ -40,5 +40,6 @@ if __name__=='__main__':
 
     #agent.run()
     #agent.model.save('tmp/{}'.format(modeldir))
-    naiveagent = simple_agent.SimpleNetworkAgent(env, n_episodes = 10, max_env_steps = 300*8, num_on=8)
+    naiveagent = simple_agent.SimpleNetworkAgent(env, n_episodes = 5, max_env_steps = 300*8, num_on=8)
+    #naiveagent = simple_agent.StaticNetworkAgent(env, n_episodes = 10, max_env_steps = 300*8, num_on=8)
     naiveagent.run()
