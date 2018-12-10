@@ -375,3 +375,12 @@ class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
         self.state = new_state
         self.reward = reward
         return new_state, reward, False, {}
+    def static_initialisation(self, sensors):
+        set_status = lambda sensornum, onsensors: 0 if sensornum in onsensors else 2
+        self.state = {k:(set_status(k, sensors),self.max_batt,0,0) for k in self.obs_basis}
+    def reset_static(self, sensors):
+        self.env.reset()
+        self.static_initialisation(sensors)
+        return self.state()
+
+
