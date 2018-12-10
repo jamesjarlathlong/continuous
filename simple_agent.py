@@ -1,4 +1,4 @@
-
+import random
 
 def wrap_action(sensornum, actionnum):
     return (sensornum,actionnum)
@@ -100,28 +100,37 @@ class SimpleNetworkAgent(object):
         return e
 class StaticNetworkAgent(object):
     """The world's simplest agent!"""
-    def __init__(self, env,on_sensors, n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
+    def __init__(self, env,on_sensors=None, n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
         self.env = env
         self.n_episodes = n_episodes
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
-        self.env.reset_static(on_sensors)
+        
         self.full_record = []
+        if on_sensors:
+            self.on_sensors = on_sensors
+        else:
+            self.on_sensors = ['S'+str(i) for i in range(16) if i==0]
         #self.num_on = num_on
-        self.on_sensors = on_sensors
+        self.env.reset_static(self.on_sensors)
     def act(self, observation):
         #recharge if battery gets below 3 
         # status 0: On 1: PreSleep 2: Sleep
         active_sensors = find_active(observation)
-        sensor = active_sensors[0]
-        sensorname, sensornum = sensor[0], sensor[1::]
-        action_num = 
-        wrapped_action = wrap_action(sensornum, 0)#wakeup
+        #sensor = active_sensors[0]
+        #sensorname, sensornum = sensor[0], sensor[1::]
+        #action_num = 0
+        randomsensor = random.choice([s for s in observation])
+        randomaction = random.choice([0,1])
+        sensorname, sensornum = randomsensor[0], randomsensor[1::]
+        #wrapped_action = wrap_action(int(sensornum), action_num)#wakeup
+        wrapped_action = wrap_action(int(sensornum), randomaction)
+        #print(wrapped_action)
         return wrapped_action
     def run(self, render=True):
         for e in range(self.n_episodes):
             print('#######New episode#############')
             done=False
-            observation = self.env.reset()
+            observation = self.env.reset_static(self.on_sensors)
             reward_sum = 0
             i=0
             while not done and i<self.env._max_episode_steps:
