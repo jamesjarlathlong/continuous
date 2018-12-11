@@ -9,7 +9,6 @@ import pandas as pd
 import time
 from functools import lru_cache
 import tensorflow as tf
-
 def fftIndgen(n):
     a = list(range(0, int(n/2+1)))
     b = list(reversed(range(1, int(n/2))))
@@ -142,11 +141,3 @@ def plot(original,twod, ax):
     mat = to_mat(original, twod)
     ax = sns.heatmap(mat,ax=ax,cbar_kws = dict(use_gridspec=False,location="top"))
     return ax
-def perturb(timeseries, factors):
-    res = []
-    for f in factors:
-        #print('FACTOR: ', f[0])
-        fullfactor = np.array([f for _ in timeseries])
-        fullfactor+=1
-        res.append(list(solar_sensor_env.add_noise(np.multiply(timeseries, fullfactor).real)))
-    return res

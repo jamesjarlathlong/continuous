@@ -32,7 +32,7 @@ def pairwise_distances(sensors):
     return scipy.spatial.distance.pdist(sensors)
 def connection_probability(r_char, dist):
     beta = 1
-    n =1
+    n =3
     ponent = (dist/r_char)**n
     return beta* np.exp(-(ponent))
 def coin_flip(p):
@@ -56,7 +56,7 @@ def num_to_name(num):
     return 'S'+str(num)
 def name_to_num(name):
     return int(name.strip('S'))
-def is_connected_to_active(sensors, active_sensors, r_char=32):
+def is_connected_to_active(sensors, active_sensors, r_char=12):
     graph = soft_geometric_graph(sensors, r_char)
     adjacency_list = get_adjacency_list(graph)
     active_sensor_nums = [name_to_num(i) for i in active_sensors]

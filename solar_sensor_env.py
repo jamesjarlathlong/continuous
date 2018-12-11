@@ -41,7 +41,7 @@ def emulate_sun():
     nighttime = 12*[0.0]
     daytime = [gaussian(0.5*i) for i in range(12,36)]
     return nighttime+daytime+nighttime
-def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery):
+def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery, randomness=True):
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
     timeperiod = 48/max_t #hours
@@ -51,10 +51,12 @@ def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, s
     on_power = 56+45+15#mAh pyboard plus digimesh plus accel
     off_power = 45#mAh
     if status == 2:#sleeping
+
         used_power = (off_power*discharge_voltage*timeperiod)
     else:#either pre-sleep or awake
         used_power = (on_power*timeperiod*discharge_voltage)
-    balance = added_power - used_power
+    factor = random.normalvariate(1,0.1) if randomness else 1
+    balance = added_power - used_power*factor
     new_battery = min(battery+balance, battery_capacity)
     new_battery = max(new_battery,0)
     #print('added power in mWh: {}, used_power: {}, battery:{}, new_battery:{}'.format(added_power, used_power, battery, new_battery))
@@ -82,8 +84,10 @@ def add_noise(series):
     noise = np.random.normal(0, 0.05, len(series))
     return series#+noise
 def full_perturber(sensors, timeseries):
-    threedperturbation = random_fields.gpu_gaussian_random_field(size=33,scale=2, length=1)
-    factors = get_sensor_perturbations(sensors, threedperturbation)
+    #threedperturbation = random_fields.gpu_gaussian_random_field(size=33,scale=2, length=1)
+    #factors = get_sensor_perturbations(sensors, threedperturbation)
+    smoothcov = functools.partial(random_fields.iso_cov, 128)
+    factors = random_fields.simulate(random_fields.form_cov_matrix(sensors, smoothcov))
     #print(factors)
     #factors = [np.array([0]) for _ in sensors]
     res = []
@@ -366,6 +370,7 @@ class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
                                              in old_state.items()},
                              self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
+        #print(old_state, reward)
         new_state = get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
                                   self.max_batt,self.num_ts, old_state, action)
@@ -379,8 +384,9 @@ class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
         set_status = lambda sensornum, onsensors: 0 if sensornum in onsensors else 2
         self.state = {k:(set_status(k, sensors),self.max_batt,0,0) for k in self.obs_basis}
     def reset_static(self, sensors):
-        self.env.reset()
+        self.reset()
         self.static_initialisation(sensors)
-        return self.state()
+        print('reset: ', self.state)
+        return self.state
 
 
