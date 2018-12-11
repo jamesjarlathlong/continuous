@@ -23,7 +23,11 @@ def flatten_state_withtime(statedict):
     flatvals = list(itertools.chain(*vals))
     flatvals.append(time)
     flatvals.append(month)
-    return np.reshape(flatvals, [1,len(flatvals)])    
+    return np.reshape(flatvals, [1,len(flatvals)])   
+def flatten_state_forconv(statedict):
+    vals = [statedict[k][0::] for k in sorted(statedict)]
+    flatvals = list(itertools.chain(*vals))
+    return np.reshape(flatvals, [1,len(flatvals)])
 def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
     return functools.reduce(lambda x,y:x*y, action_sizes)
