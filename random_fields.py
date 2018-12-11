@@ -107,8 +107,12 @@ def aniso2d_cov(phi,factor, p1, p2):
     phi2 = phi*factor
     expon = math.sqrt((dist0/phi)**2 + (dist1/phi2)**2)
     return sigma**2 * np.exp(-expon)
-def form_cov_matrix(list_of_points, covfun):
+smoothcov = functools.partial(iso_cov, 128)
+
+def form_cov_matrix(list_of_points):
     """given a list of points """
+    covfun =smoothcov
+    print('caching?')
     npoints = len(list_of_points)
     mat = np.zeros((npoints, npoints))
     allcombs = itertools.product(enumerate(list_of_points), enumerate(list_of_points))
@@ -122,7 +126,6 @@ def simulate(covmatrix):
     vector of zero mean unit variance random normal
     numbers to return a realisation of the random process"""
     n,n = np.shape(covmatrix)
-    print(n,n)
     L = np.linalg.cholesky(covmatrix)#nxn triangular matrix
     rands = np.random.normal(size = (n,1))
     sim = np.dot(L , rands)

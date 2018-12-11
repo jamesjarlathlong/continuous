@@ -86,8 +86,10 @@ def add_noise(series):
 def full_perturber(sensors, timeseries):
     #threedperturbation = random_fields.gpu_gaussian_random_field(size=33,scale=2, length=1)
     #factors = get_sensor_perturbations(sensors, threedperturbation)
-    smoothcov = functools.partial(random_fields.iso_cov, 128)
-    factors = random_fields.simulate(random_fields.form_cov_matrix(sensors, smoothcov))
+    hashable_sensors = tuple(sensors)
+    former = functools.lru_cache(maxsize=8)
+    mat = former(random_fields.form_cov_matrix)(hashable_sensors)
+    factors = random_fields.simulate(mat)#random_fields.form_cov_matrix(hashable_sensors))
     #print(factors)
     #factors = [np.array([0]) for _ in sensors]
     res = []
