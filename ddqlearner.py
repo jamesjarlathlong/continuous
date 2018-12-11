@@ -7,22 +7,29 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras import backend as K
 from keras.models import load_model
+import tensorflow as tf
 import itertools
 import functools
 import multi_sensor_env
 from gym.envs.registration import registry, register, make, spec
 # Deep Q-learning Agent
+def _huber_loss(y_true, y_pred, clip_delta=1.0):
+        error = y_true - y_pred
+        cond  = K.abs(error) <= clip_delta
+        squared_loss = 0.5 * K.square(error)
+        quadratic_loss = 0.5 * K.square(clip_delta) + clip_delta * (K.abs(error) - clip_delta)
+        return K.mean(tf.where(cond, squared_loss, quadratic_loss))
 def flatten_state(statedict):
     vals = [statedict[k][0::] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
     return np.reshape(flatvals, [1,len(flatvals)])
 def flatten_state_withtime(statedict):
     time = statedict['S0'][3]
-    month = statedict['S0'][4]
+    #month = statedict['S0'][4]
     vals = [statedict[k][0:3] for k in sorted(statedict)]
     flatvals = list(itertools.chain(*vals))
     flatvals.append(time)
-    flatvals.append(month)
+    #flatvals.append(month)
     return np.reshape(flatvals, [1,len(flatvals)])    
 def get_action_size(env):
     action_sizes = [space.n for space in env.action_space.spaces]
@@ -72,7 +79,7 @@ class DDQNAgent:
         self.learning_rate = learning_rate
         self.layer_width = layer_width
         if modeldir:
-            self.model = load_model(modeldir)
+            self.model = load_model(modeldir,custom_objects = {'_huber_loss':_huber_loss})
         else:
             self.model = self._build_model()
         self.target_model = self._build_model()
@@ -91,7 +98,7 @@ class DDQNAgent:
         model.add(Dense(self.layer_width, activation='relu'))
         #model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss=self._huber_loss,
+        model.compile(loss=_huber_loss,
                       optimizer=Adam(lr=self.learning_rate))
         return model
     def update_target_model(self):
