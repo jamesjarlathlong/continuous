@@ -353,22 +353,50 @@ def get_reward(old_state):
     else: 
         return -1
 """
-def graph_reward(old_state, sensors):
+def graph_reward(r_char, n, old_state, sensors):
     """sensors is a list of sensor coords,assumed to be associated in order with the 
     sensor names"""
     active_sensors = [k for k,v in old_state.items() if sensor_env.get_reward(v[0:2])]
-    connectivity = random_graph.is_connected_to_active(sensors, active_sensors)
+    connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
     capable_rewards =  len([v for k,v in connectivity.items() if v])/(len(connectivity))
     #print('connectivity {},{}'.format(connectivity, capable_rewards))
     if active_sensors:
         return capable_rewards
     else:
         return -1
+badgraphreward = functools.partial(graph_reward, 12, 3)
+goodgraphreward = functools.partial(graph_reward, 16,1)
 class SolarGraphSensorEnv(SolarSensorEnv, gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
-        reward = graph_reward({k: v[0:2] for k,v 
+        reward = badgraphreward({k: v[0:2] for k,v 
+                                             in old_state.items()},
+                             self.sensors)
+        #print('getting reward,{}:{}'.format(state, reward))
+        #print(old_state, reward)
+        new_state = get_new_state(self.episode_battery_dynamics, 
+                                  self.battery_capacity,
+                                  self.max_batt,self.num_ts, old_state, action)
+        #if new_battery == 0:
+        #    done=True
+        #else: 
+        self.state = new_state
+        self.reward = reward
+        return new_state, reward, False, {}
+    def static_initialisation(self, sensors):
+        set_status = lambda sensornum, onsensors: 0 if sensornum in onsensors else 2
+        self.state = {k:(set_status(k, sensors),self.max_batt,0,0) for k in self.obs_basis}
+    def reset_static(self, sensors):
+        self.reset()
+        self.static_initialisation(sensors)
+        print('reset: ', self.state)
+        return self.state
+class GoodGraphSensorEnv(SolarSensorEnv, gym.Env):
+    def step(self, action):
+        assert self.action_space.contains(action)
+        old_state = self.state
+        reward = goodgraphreward({k: v[0:2] for k,v 
                                              in old_state.items()},
                              self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
