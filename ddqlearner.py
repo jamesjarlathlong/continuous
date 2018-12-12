@@ -79,6 +79,7 @@ class DoubleDQNAgent:
         self.gamma = 0.99    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
+        self.update_frequency = 10
         self.epsilon_decay = decay_rate
         self.learning_rate = learning_rate
         self.layer_width = layer_width
@@ -149,12 +150,14 @@ class DoubleDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 i+=1
-                if len(self.memory) > 8:
-                    #print(i)
-                    self.replay(8)
+                if i%self.update_frequency == 0:
+                    if len(self.memory) > 32:
+                        #print(i)
+                        self.replay(32)
+                    self.update_target_model()
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
-            self.update_target_model()
+            #self.update_target_model()
         return e
 
 class DDQNAgent:
