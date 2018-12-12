@@ -30,9 +30,8 @@ def generate_network_coords(num_sensors, size=32):
     return [generate_random_coords(size) for _ in range(num_sensors)]
 def pairwise_distances(sensors):
     return scipy.spatial.distance.pdist(sensors)
-def connection_probability(r_char, dist):
+def connection_probability(r_char,n, dist):
     beta = 1
-    n =3
     ponent = (dist/r_char)**n
     return beta* np.exp(-(ponent))
 def coin_flip(p):
@@ -41,8 +40,8 @@ def translate_vector_form(num_items, vector):
     actualidxs = list(itertools.combinations(range(num_items), 2))
     res = {actualidxs[i]:el for i,el in enumerate(vector)}
     return res
-def soft_geometric_graph(sensors, r_char=32):
-    connector = functools.partial(connection_probability, r_char)
+def soft_geometric_graph(sensors, r_char=32,n=1):
+    connector = functools.partial(connection_probability, r_char, n)
     probabilities = connector(pairwise_distances(sensors))
     #connections = coin_flip(probabilities)
     connections = [coin_flip(p) for p in probabilities]
@@ -56,8 +55,8 @@ def num_to_name(num):
     return 'S'+str(num)
 def name_to_num(name):
     return int(name.strip('S'))
-def is_connected_to_active(sensors, active_sensors, r_char=12):
-    graph = soft_geometric_graph(sensors, r_char)
+def is_connected_to_active(sensors, active_sensors, r_char=12,n=1):
+    graph = soft_geometric_graph(sensors, r_char,n)
     adjacency_list = get_adjacency_list(graph)
     active_sensor_nums = [name_to_num(i) for i in active_sensors]
     adjacent_to_active = set(itertools.chain(*[v for k,v in adjacency_list.items() if k in active_sensor_nums]))
