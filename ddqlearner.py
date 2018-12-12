@@ -236,7 +236,6 @@ class DDQNConvAgent:
             while not done and i<self.env._max_episode_steps:
                 #print(i)
                 if render: self.env.render()
-                print(np.shape(prev_state))
                 action = self.act(prev_state)
                 # record various intermediates (needed later for backprop)
                 # step the environment and get new measurements
