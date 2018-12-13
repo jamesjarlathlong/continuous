@@ -150,7 +150,7 @@ class DoubleDQNAgent:
                 prev_state = flat_state
                 reward_sum += reward
                 if len(self.memory)>32:
-			self.replay(32)
+                    self.replay(32)
                 if i%self.update_frequency == 0:
                     self.update_target_model()
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
