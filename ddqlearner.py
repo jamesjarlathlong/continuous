@@ -68,7 +68,7 @@ def alt_action_lookup(env, state, action_number):
         #last action is a noop, all others are togglers
         return (0,multi_sensor_env.what_is_noop(state['S0']))
 class DoubleDQNAgent:
-    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995, layer_width=64):
+    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_finish = 0.75, layer_width=64):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
@@ -76,11 +76,11 @@ class DoubleDQNAgent:
         print(self.action_size, self.state_size)
         self.action_lookup = functools.partial(alt_action_lookup,env)#list(itertools.product(*(range(space.n) for space in env.action_space.spaces)))
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.99    # discount rate
+        self.gamma = 0.999    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
-        self.update_frequency = 10
-        self.epsilon_decay = decay_rate
+        self.update_frequency = 128
+        self.epsilon_delta = (self.epsilon-self.epsilon_min)/int(decay_finish*n_episodes)
         self.learning_rate = learning_rate
         self.layer_width = layer_width
         if modeldir:
@@ -127,7 +127,7 @@ class DoubleDQNAgent:
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+            self.epsilon -= self.epsilon_delta
     def run(self, render=True):
         for e in range(self.n_episodes):
             print('#######New episode#############', self.epsilon)
@@ -149,11 +149,9 @@ class DoubleDQNAgent:
                 # make next_state the new current state for the next frame.
                 prev_state = flat_state
                 reward_sum += reward
-                i+=1
+                if len(self.memory)>32:
+			self.replay(32)
                 if i%self.update_frequency == 0:
-                    if len(self.memory) > 32:
-                        #print(i)
-                        self.replay(32)
                     self.update_target_model()
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)

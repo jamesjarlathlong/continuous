@@ -35,7 +35,7 @@ if __name__=='__main__':
               'solarpowerrecord':monthrecord, 'recordname':recordname,'coordinate_generator':random_graph.generate_sorted_grid_coords}
     )
     env = gym.make('SolarGraphSensor-v0')
-    agent = ddqlearner.DoubleDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.99999975, learning_rate = learning_rate, layer_width=layer_width)
+    agent = ddqlearner.DoubleDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_finish = 0.75, learning_rate = learning_rate, layer_width=layer_width)
     #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
 
     agent.run()
