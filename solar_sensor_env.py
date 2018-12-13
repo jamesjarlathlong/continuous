@@ -41,7 +41,7 @@ def emulate_sun():
     nighttime = 12*[0.0]
     daytime = [gaussian(0.5*i) for i in range(12,36)]
     return nighttime+daytime+nighttime
-def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery, randomness=True):
+def battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery, randomness=False):
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
     timeperiod = 48/max_t #hours
