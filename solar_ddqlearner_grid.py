@@ -1,4 +1,4 @@
-import ddqlearner as ddqlearner
+import ddqlearnercp as ddqlearner
 import gym
 from gym.envs.registration import registry, register, make, spec
 import os
@@ -30,13 +30,13 @@ if __name__=='__main__':
     monthrecord = get_month(solarrecord,8)
     register(
     id='SolarGraphSensor-v0',
-    entry_point='solar_sensor_env:SolarGraphSensorEnv',
-    kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':3,
+    entry_point='solar_sensor_env:GoodGraphSensorEnv',
+    kwargs = {'max_batt':1,'num_sensors':num_sensors, 'deltat':3,
               'solarpowerrecord':monthrecord, 'recordname':recordname,'coordinate_generator':random_graph.generate_sorted_grid_coords}
     )
     env = gym.make('SolarGraphSensor-v0')
     agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.99999975, learning_rate = learning_rate, layer_width=layer_width)
-    #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
+    #agent = ddqlearner.DDQNAgent(env,n_episodes = 400, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
 
     agent.run()
     agent.model.save('tmp/{}'.format(modeldir))
