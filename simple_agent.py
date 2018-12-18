@@ -87,6 +87,7 @@ class SimpleNetworkAgent(object):
             observation = self.env.reset()
             reward_sum = 0
             i=0
+            rewards = []
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
                 action = self.act(observation)
@@ -95,9 +96,10 @@ class SimpleNetworkAgent(object):
                 #print('new observation:{}, reward:{}'.format(observation, reward))
                 reward_sum += reward
                 i+=1
+            rewards.append(reward_sum)
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #self.full_record.append(self.env.record)
-        return e
+        return rewards
 class StaticNetworkAgent(object):
     """The world's simplest agent!"""
     def __init__(self, env,on_sensors=None, n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
