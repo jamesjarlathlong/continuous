@@ -38,7 +38,7 @@ class SimpleAgent(object):
                 reward_sum += reward
                 i+=1
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
-            self.full_record.append(self.env.record)
+            #self.full_record.append(self.env.record)
         return e
 
 def find_active(observation):
@@ -96,7 +96,7 @@ class SimpleNetworkAgent(object):
                 reward_sum += reward
                 i+=1
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
-            self.full_record.append(self.env.record)
+            #self.full_record.append(self.env.record)
         return e
 class StaticNetworkAgent(object):
     """The world's simplest agent!"""
