@@ -205,7 +205,7 @@ class SolarSensorEnv(gym.Env):
     If the Sensor remains on, you win a reward of 1.
     """
     def __init__(self, max_batt, num_sensors, solarpowerrecord,deltat,
-                 recordname=get_random_name(), num_days = 365, coordinate_generator=random_graph.generate_sorted_network_coords):
+                 recordname=get_random_name(), num_days = 365, coordinate_generator=random_graph.generate_sorted_network_coords, full_log=False):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
         self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
@@ -227,9 +227,12 @@ class SolarSensorEnv(gym.Env):
         self.powerseries = downsample(solarpowerrecord, factor=int(48/num_ts))
         #rendering 
         uq = recordname
-        self.fname = os.getcwd()+'/tmp/'+uq+'.json'
+        self.full_log=full_log
+        if full_log:
+            self.fname = os.getcwd()+'/tmp/'+uq+'.json'
+            self.record = []
         self.rewardfname = os.getcwd()+'/tmp/'+'reward'+uq+'.json'
-        self.record = []
+        
         self.rewards = []
     def base_state(self):
         return {k:(set_initial_status(k),self.max_batt,0,0) for k in self.obs_basis}
@@ -270,13 +273,14 @@ class SolarSensorEnv(gym.Env):
                                          for k, episode_battery_runner 
                                          in episode_battery_runners.items()}
         #write out record to file for inspection
-        previous = might_not_exist_read(self.fname)
-        if len(previous['data'])>3:
-            previous['data'].pop(0)
-        previous['data'].append(self.record)
-        with open(self.fname, 'w') as f:
-            json.dump(previous,f)
-        self.record = []
+        if self.full_log:
+            previous = might_not_exist_read(self.fname)
+            if len(previous['data'])>3:
+                previous['data'].pop(0)
+            previous['data'].append(self.record)
+            with open(self.fname, 'w') as f:
+                json.dump(previous,f)
+            self.record = []
         previous_rewards = might_not_exist_read(self.rewardfname)
         previous_rewards['data'].append(sum(self.rewards))
         with open(self.rewardfname, 'w') as f:
@@ -285,7 +289,8 @@ class SolarSensorEnv(gym.Env):
         self.rewards = []
         return self.state
     def render(self):
-        self.record.append(self.state)
+        if self.full_log:
+            self.record.append(self.state)
         self.rewards.append(self.reward)
 
 
