@@ -81,13 +81,14 @@ class SimpleNetworkAgent(object):
             wrapped_action = wrap_action(sensornum, 0)#wakeup
         return wrapped_action
     def run(self, render=True):
+        rewards = []
         for e in range(self.n_episodes):
             print('#######New episode#############')
             done=False
             observation = self.env.reset()
             reward_sum = 0
             i=0
-            rewards = []
+            #rewards = []
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
                 action = self.act(observation)
