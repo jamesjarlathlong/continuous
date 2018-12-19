@@ -202,7 +202,7 @@ class TwoOptionSensorEnv(gym.Env):
 
 
   
-class BadTwoOptionSensorEnv(gym.Env):
+class BadTwoOptionSensorEnv(TwoOptionSensorEnv,gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
