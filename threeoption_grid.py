@@ -34,12 +34,12 @@ if __name__=='__main__':
               ,'full_log':False}
     )
     env = gym.make('ThreeOptionSensorEnv-v0')
-    agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8,
-                                 modeldir=loadmodel,decay_rate = 0.99999975,
-                                  learning_rate = learning_rate, layer_width=layer_width)
+    #agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8,
+    #                             modeldir=loadmodel,decay_rate = 0.99999975,
+    #                              learning_rate = learning_rate, layer_width=layer_width)
     #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
 
-    agent.run()
-    agent.model.save('tmp/{}'.format(modeldir))
-    #naiveagent = simple_agent.SimpleThreeOptionAgent(env, n_episodes = 5, max_env_steps = 300*8, num_on=12)
-    #naiveagent.run()
+    #agent.run()
+    #agent.model.save('tmp/{}'.format(modeldir))
+    naiveagent = simple_agent.SimpleThreeOptionAgent(env, n_episodes = 5, max_env_steps = 300*8, num_on=8)
+    naiveagent.run()

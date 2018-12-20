@@ -33,7 +33,7 @@ def threeoption_get_reward(state):
     return reward
 def threeoption_notdead(state):
     status, battery = state
-    if status in [0,1]: #note could put battery here, 0 is on , 1 is idle ,2 is deep sleep
+    if status in [0,1] and battery>0: #note could put battery here, 0 is on , 1 is idle ,2 is deep sleep
         reward = 1
     else:
         reward = 0
@@ -44,11 +44,11 @@ def threeoption_graph_reward(r_char, n, old_state, sensors):
     """sensors is a list of sensor coords,assumed to be associated in order with the 
     sensor names"""
     active_sensors = [k for k,v in old_state.items() if threeoption_get_reward(v[0:2])]
+    connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
     idle_sensor_names = [k for k,v in old_state.items() if threeoption_notdead(v[0:2])]
-    idle_sensor_nums = [int(name.strip('S')) for name in idle_sensor_names]
-    idle_sensors = [v for idx,v in enumerate(sensors) if idx in idle_sensor_nums]
-    connectivity = random_graph.is_connected_to_active(idle_sensors, active_sensors, r_char=r_char, n=n)
-    capable_rewards =  len([v for k,v in connectivity.items() if v])/(len(sensors))
+    connected = [k for k,v in connectivity.items() if v]
+    connected_and_on = [k for k in connected if k in idle_sensor_names]
+    capable_rewards =  len(connected_and_on)/(len(sensors))
     #print('connectivity {},{}'.format(connectivity, capable_rewards))
     if active_sensors:
         return capable_rewards

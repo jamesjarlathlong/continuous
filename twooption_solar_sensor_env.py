@@ -31,7 +31,8 @@ def twooption_get_reward(state):
     else:
         reward = 0
     return reward
-
+def notdead(state):
+    return state[1]>0
 def set_initial_status(sensornum):
     return 0 if sensornum=='S0' else 1
 def twooption_graph_reward(r_char, n, old_state, sensors):
@@ -39,7 +40,13 @@ def twooption_graph_reward(r_char, n, old_state, sensors):
     sensor names"""
     active_sensors = [k for k,v in old_state.items() if twooption_get_reward(v[0:2])]
     connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
-    capable_rewards =  len([v for k,v in connectivity.items() if v])/(len(connectivity))
+    hasbatt_sensor_names = [k for k,v in old_state.items() if notdead(v[0:2])]
+    connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
+    connected = [k for k,v in connectivity.items() if v]
+    connected_and_on = [k for k in connected if k in hasbatt_sensor_names]
+    capable_rewards =  len(connected_and_on)/(len(sensors))
+    #print('active:', active_sensors)
+    #print('on: {}, connected: {}, connected_and_on: {}'.format(hasbatt_sensor_names,connected, connected_and_on))
     #print('connectivity {},{}'.format(connectivity, capable_rewards))
     if active_sensors:
         return capable_rewards
@@ -211,7 +218,7 @@ class BadTwoOptionSensorEnv(TwoOptionSensorEnv,gym.Env):
                              self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
         #print(old_state, reward)
-        new_state = get_new_state(self.episode_battery_dynamics, 
+        new_state = twooption_get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
                                   self.max_batt,self.num_ts, old_state, action)
         #if new_battery == 0:
