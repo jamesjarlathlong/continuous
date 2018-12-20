@@ -211,7 +211,7 @@ class BadTwoOptionSensorEnv(TwoOptionSensorEnv,gym.Env):
                              self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
         #print(old_state, reward)
-        new_state = get_new_state(self.episode_battery_dynamics, 
+        new_state = twooption_get_new_state(self.episode_battery_dynamics, 
                                   self.battery_capacity,
                                   self.max_batt,self.num_ts, old_state, action)
         #if new_battery == 0:
