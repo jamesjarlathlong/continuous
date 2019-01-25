@@ -41,7 +41,6 @@ def twooption_graph_reward(r_char, n, old_state, sensors):
     active_sensors = [k for k,v in old_state.items() if twooption_get_reward(v[0:2])]
     connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
     hasbatt_sensor_names = [k for k,v in old_state.items() if notdead(v[0:2])]
-    connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
     connected = [k for k,v in connectivity.items() if v]
     connected_and_on = [k for k in connected if k in hasbatt_sensor_names]
     capable_rewards =  len(connected_and_on)/(len(sensors))
@@ -52,7 +51,7 @@ def twooption_graph_reward(r_char, n, old_state, sensors):
         return capable_rewards
     else:
         return -1
-badgraphreward = functools.partial(twooption_graph_reward, 12, 3)
+badgraphreward = functools.partial(twooption_graph_reward, 12, 1)
 goodgraphreward = functools.partial(twooption_graph_reward, 32,1)
 def twooption_battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery, randomness=False):
     battery = scaledbattery*(battery_capacity/maxbatt)
