@@ -9,7 +9,6 @@ import pandas as pd
 import time
 from functools import lru_cache
 import tensorflow as tf
-
 def fftIndgen(n):
     a = list(range(0, int(n/2+1)))
     b = list(reversed(range(1, int(n/2))))
@@ -108,8 +107,12 @@ def aniso2d_cov(phi,factor, p1, p2):
     phi2 = phi*factor
     expon = math.sqrt((dist0/phi)**2 + (dist1/phi2)**2)
     return sigma**2 * np.exp(-expon)
-def form_cov_matrix(list_of_points, covfun):
+smoothcov = functools.partial(iso_cov, 128)
+
+def form_cov_matrix(list_of_points):
     """given a list of points """
+    covfun =smoothcov
+    print('caching?')
     npoints = len(list_of_points)
     mat = np.zeros((npoints, npoints))
     allcombs = itertools.product(enumerate(list_of_points), enumerate(list_of_points))
@@ -123,7 +126,6 @@ def simulate(covmatrix):
     vector of zero mean unit variance random normal
     numbers to return a realisation of the random process"""
     n,n = np.shape(covmatrix)
-    print(n,n)
     L = np.linalg.cholesky(covmatrix)#nxn triangular matrix
     rands = np.random.normal(size = (n,1))
     sim = np.dot(L , rands)
@@ -142,11 +144,3 @@ def plot(original,twod, ax):
     mat = to_mat(original, twod)
     ax = sns.heatmap(mat,ax=ax,cbar_kws = dict(use_gridspec=False,location="top"))
     return ax
-def perturb(timeseries, factors):
-    res = []
-    for f in factors:
-        #print('FACTOR: ', f[0])
-        fullfactor = np.array([f for _ in timeseries])
-        fullfactor+=1
-        res.append(list(solar_sensor_env.add_noise(np.multiply(timeseries, fullfactor).real)))
-    return res
