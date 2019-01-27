@@ -174,9 +174,10 @@ class TwoOptionSensorEnv(gym.Env):
         #rendering 
         uq = recordname
         self.full_log=full_log
+        self.record = []
         if full_log:
             self.fname = os.getcwd()+'/tmp/'+uq+'.json'
-            self.record = []
+        #self.record = []
         self.rewardfname = os.getcwd()+'/tmp/'+'reward'+uq+'.json'
         self.steps_taken=0
         self.rewards = []
@@ -188,6 +189,7 @@ class TwoOptionSensorEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
+        #reward = eno_reward(self.harvested_records, self.deltat,self.max_batt, old_state, self.record, self.steps_taken)
         reward = goodgraphreward({k: v[0:2] for k,v 
                                              in old_state.items()},
                              self.sensors)
@@ -214,6 +216,7 @@ class TwoOptionSensorEnv(gym.Env):
         perturbed = full_perturber(self.sensors, currentslice)
         randomly_perturbed = {k:perturbed[idx]
                               for idx, k in enumerate(self.state)}
+        self.harvested_records = randomly_perturbed
         episode_battery_runners = {k:functools.partial(runner, v)
                                   for k,v in randomly_perturbed.items()}
         self.episode_battery_dynamics = {k: episode_battery_runner(twooption_battery_dynamics)
@@ -227,7 +230,7 @@ class TwoOptionSensorEnv(gym.Env):
             previous['data'].append(self.record)
             with open(self.fname, 'w') as f:
                 json.dump(previous,f)
-            self.record = []
+        self.record = []
         previous_rewards = might_not_exist_read(self.rewardfname)
         previous_rewards['data'].append(sum(self.rewards))
         with open(self.rewardfname, 'w') as f:
@@ -249,25 +252,5 @@ class TwoOptionSensorEnv(gym.Env):
         self.record.append(self.state)
         self.rewards.append(self.reward)
 
-
-  
-class BadTwoOptionSensorEnv(TwoOptionSensorEnv,gym.Env):
-    def step(self, action):
-        assert self.action_space.contains(action)
-        old_state = self.state
-        reward = badgraphreward({k: v[0:2] for k,v 
-                                             in old_state.items()},
-                             self.sensors)
-        #print('getting reward,{}:{}'.format(state, reward))
-        #print(old_state, reward)
-        new_state = twooption_get_new_state(self.episode_battery_dynamics, 
-                                  self.battery_capacity,
-                                  self.max_batt,self.num_ts, old_state, action)
-        #if new_battery == 0:
-        #    done=True
-        #else: 
-        self.state = new_state
-        self.reward = reward
-        return new_state, reward, False, {}
 
 
