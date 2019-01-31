@@ -40,7 +40,8 @@ def action_lookup(env, state, action_number):
 
 
 class DDQNAgent:
-    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001, decay_rate = 0.999995, layer_width=64):
+    def __init__(self, env,n_episodes, max_env_steps=None, modeldir=None, learning_rate = 0.0001,
+                 decay_rate = 0.999995, layer_width=64, checkpoint_name = None):
         self.env = env
         self.n_episodes = n_episodes
         self.state_size = len(flatten_state_withtime(env.observation_space.sample())[0])
@@ -58,6 +59,8 @@ class DDQNAgent:
             self.model = load_model(modeldir,custom_objects = {'_huber_loss':_huber_loss})
         else:
             self.model = self._build_model()
+        if checkpoint_name:
+            self.check_dir = 'tmp/{}'.format(checkpoint_name)
         self.target_model = self._build_model()
         self.update_target_model()
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
@@ -134,4 +137,6 @@ class DDQNAgent:
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #agent.replay(32)
             self.update_target_model()
+            if e % 100 == 0:
+                self.model.save(self.check_dir)
         return e
