@@ -34,7 +34,7 @@ if __name__=='__main__':
               ,'full_log':False}
     )
     env = gym.make('EnoSensorEnv-v0')
-    agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.99999975, learning_rate = learning_rate, layer_width=layer_width)
+    agent = ddqlearner.DDQNAgent(env,n_episodes = 5000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.99999975, learning_rate = learning_rate, layer_width=layer_width,checkpoint_name=modeldir)
     #agent = ddqlearner.DDQNAgent(env,n_episodes = 2000, max_env_steps=300*8, modeldir=loadmodel,decay_rate = 0.01, learning_rate = learning_rate, layer_width=layer_width)
 
     agent.run()
