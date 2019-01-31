@@ -171,9 +171,7 @@ class EnoSensorEnv(gym.Env):
         assert self.action_space.contains(action)
         old_state = self.state
         #reward = eno_reward(self.harvested_records, self.deltat,self.max_batt, old_state, self.record, self.steps_taken)
-        reward = eno_reward({k: v[0:2] for k,v 
-                                             in old_state.items()},
-                             self.sensors)
+        reward = eno_reward(self.harvested_records, self.deltat,self.max_batt, old_state, self.record, self.steps_taken)
         #print('getting reward,{}:{}'.format(state, reward))
         #print(old_state, reward)
         new_state = eno_get_new_state(self.episode_battery_dynamics, 
