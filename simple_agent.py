@@ -322,3 +322,49 @@ class SimpleThreeOptionAgent(object):
             print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
             #self.full_record.append(self.env.record)
         return rewards
+class SimpleEnoAgent(object):
+    """The world's simplest agent!"""
+    def __init__(self, env,n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
+        self.env = env
+        self.n_episodes = n_episodes
+        if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
+        self.env.reset()
+        self.full_record = []
+        self.num_on = num_on
+    def act(self, observation):
+        #recharge if battery gets below 3 
+        # status 0: On 1: PreSleep 2: Sleep
+        #active_sensors = find_active(observation)
+        #print(active_sensors, observation)
+        #find min active sensor
+        sensors = [k for k in observation]
+        non50_sensor = [(k,v) for k,v in observation.items()
+                            if v[0]!=5]
+        sensor = non50_sensor[0] if non50_sensor else sensors[0]#active_sensors[0]
+        sensorname, sensornum = sensor[0], sensor[1::]
+        status, battery, diff,t = observation[sensor]
+        #find max idle sensor
+        action = 5 if battery>0 else 0
+        wrapped_action = wrap_action(int(sensornum), action)#sleep
+        return wrapped_action
+    def run(self, render=True):
+        rewards = []
+        for e in range(self.n_episodes):
+            print('#######New episode#############')
+            done=False
+            observation = self.env.reset()
+            reward_sum = 0
+            i=0
+            #rewards = []
+            while not done and i<self.env._max_episode_steps:
+                if render: self.env.render()
+                action = self.act(observation)
+                #print('observation:{}, action:{}'.format(observation, action))
+                observation, reward, done, info = self.env.step(action)
+                #print('new observation:{}, reward:{}'.format(observation, reward))
+                reward_sum += reward
+                i+=1
+            rewards.append(reward_sum)
+            print("episode: {}/{}, score: {}".format(e, self.n_episodes, reward_sum))
+            #self.full_record.append(self.env.record)
+        return rewards
