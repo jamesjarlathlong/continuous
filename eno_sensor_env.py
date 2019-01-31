@@ -72,6 +72,7 @@ def calculate_discrepancy(state, staterecord, harvested_record):
     return energy_discrepancy
 def eno_battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, status, scaledbattery, randomness=False):
     #status is anything from [0,0.1,0.2,0.4,0.4.0.5,0.6,0.7,0.8,0.9]
+    duty_cycle = status/10
     battery = scaledbattery*(battery_capacity/maxbatt)
     discharge_voltage = 3.7 #Volts
     timeperiod = 48/max_t #hours
@@ -81,8 +82,8 @@ def eno_battery_dynamics(generated_power,battery_capacity, maxbatt, max_t, statu
     on_power = 56+45+15#mAh pyboard plus digimesh plus accel
     off_power = 45#mAh
     deepsleeppower = 0.5
-    if status >0:#sleeping
-        used_power = (on_power*discharge_voltage*timeperiod*status)+(off_power*discharge_voltage*timeperiod*(1-status))
+    if duty_cycle >0:#sleeping
+        used_power = (on_power*discharge_voltage*timeperiod*duty_cycle)+(off_power*discharge_voltage*timeperiod*(1-duty_cycle))
     else:#either pre-sleep or awake
         used_power = (deepsleeppower*timeperiod*discharge_voltage)
     factor = random.normalvariate(1,0.1) if randomness else 1
@@ -134,7 +135,7 @@ class EnoSensorEnv(gym.Env):
                  coordinate_generator=random_graph.generate_sorted_network_coords,full_log=False):
         self.max_batt = max_batt
         self.battery_capacity = 2000*3.7#2000mAh*3.7V
-        self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(2)))
+        self.action_space = spaces.Tuple((spaces.Discrete(num_sensors),spaces.Discrete(11)))
         self.deltat = deltat
         num_ts = int(24/deltat)
         self.num_ts = num_ts

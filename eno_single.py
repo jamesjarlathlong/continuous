@@ -1,4 +1,4 @@
-import ddqlearnercp as ddqlearner
+import ddqlearnereno as ddqlearner
 import gym
 from gym.envs.registration import registry, register, make, spec
 import os
@@ -28,7 +28,7 @@ if __name__=='__main__':
     register(
     id='EnoSensorEnv-v0',
     entry_point='eno_sensor_env:EnoSensorEnv',
-    kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':1,
+    kwargs = {'max_batt':10,'num_sensors':num_sensors, 'deltat':3,
               'solarpowerrecord':monthrecord, 'recordname':recordname,
               'coordinate_generator':random_graph.generate_sorted_grid_coords
               ,'full_log':False}
