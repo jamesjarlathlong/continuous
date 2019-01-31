@@ -58,7 +58,7 @@ def scale_power(time_period, max_batt,energy_generated):
     battery_capacity = 2000*3.7
     max_batt = 10
     power = energy_generated*1000*time_period
-    scaled_to_battery = battery*max_batt/battery_capacity
+    scaled_to_battery = power*max_batt/battery_capacity
     return scaled_to_battery
 def eno_reward(harvested_records, deltat,max_batt, state, state_record, steps_taken):
     #staterecord is like [{'s1':[status, battery,diff,time,'s2: '}, {},{}]
@@ -189,10 +189,10 @@ class TwoOptionSensorEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action)
         old_state = self.state
-        #reward = eno_reward(self.harvested_records, self.deltat,self.max_batt, old_state, self.record, self.steps_taken)
-        reward = goodgraphreward({k: v[0:2] for k,v 
-                                             in old_state.items()},
-                             self.sensors)
+        reward = eno_reward(self.harvested_records, self.deltat,self.max_batt, old_state, self.record, self.steps_taken)
+        #reward = goodgraphreward({k: v[0:2] for k,v 
+        #                                     in old_state.items()},
+        #                     self.sensors)
         #print('getting reward,{}:{}'.format(state, reward))
         #print(old_state, reward)
         new_state = twooption_get_new_state(self.episode_battery_dynamics, 
