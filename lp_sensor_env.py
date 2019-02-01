@@ -19,6 +19,7 @@ import multi_sensor_env
 import time
 import math
 import calendar
+import copy
 #850/2344 for simple q learning
 from solar_sensor_env import (runner, slicer, full_perturber, get_sensor_perturbations,get_generated_power,
                               batt_diff,new_time,might_not_exist_read,downsample,
@@ -54,7 +55,7 @@ def eno_status_dynamics(status, battery, action):
     #if action == 1:#go to sleep
     #    new_status =1#sleep
     #newstatus = action
-    return status
+    return action
 def what_is_noop(state):
     return state[0]
 def eno_get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, full_actions):
@@ -76,7 +77,9 @@ def simulate_whether_on(state):
 def lp_reward(r_char, n, old_state, sensors):
     """sensors is a list of sensor coords,assumed to be associated in order with the 
     sensor names"""
+
     active_sensors = [k for k,v in old_state.items() if simulate_whether_on(v[0:2])]
+    #print('state: ', old_state, active_sensors)
     #connectivity = random_graph.is_connected_to_active(sensors, active_sensors, r_char=r_char, n=n)
     #hasbatt_sensor_names = [k for k,v in old_state.items() if notdead(v[0:2])]
     #connected = [k for k,v in connectivity.items() if v]
@@ -159,7 +162,7 @@ class EnoSensorEnv(gym.Env):
         perturbed = full_perturber(self.sensors, currentslice)
         randomly_perturbed = {k:perturbed[idx]
                               for idx, k in enumerate(self.state)}
-        self.harvested_records = randomly_perturbed
+        self.harvested_records = copy.deepcopy(randomly_perturbed)
         print(len(self.harvested_records['S0']))
         episode_battery_runners = {k:functools.partial(runner, v)
                                   for k,v in randomly_perturbed.items()}

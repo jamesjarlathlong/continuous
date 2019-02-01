@@ -46,11 +46,8 @@ def solve_eno(deltat,series, b_0):
     #print('startbatt: ',b_0,'problem: ', problem)
     r = problem.solve()
     if r==1:
-        try:
-            vals = sorted([v for v in problem.variables()], key=lambda i:int(i.name.split('_')[1]))
-            dseries = [v.varValue for v in vals]
-        except:
-            print('uh oh', problem.variables(),series)
+        vals = sorted([v for v in problem.variables()], key=lambda i:int(i.name.split('_')[1]))
+        dseries = [v.varValue for v in vals]
     else:
         print('no solution', b_0, series)
         dseries = [0 for _ in range(times)]
@@ -84,19 +81,20 @@ class LPAgent(object):
         #find min active sensor
         this_t_action = {}
         for sensor, state in observation.items():
-        	status, battery, diff,t = state
-        	if t==0:
-        		#new action plan for a new day
-        		#first get the next 8 time steps harvested energy from the oracle
-        		globalt = self.env.steps_taken
-                print('total t', globalt, len(self.env.harvested_records[sensor]))
-        		perday = self.env.num_ts
-        		mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
-        		next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
-        		dutycycleplan = solve_eno(self.env.deltat, next_days_solar, mWhbattery)
-        		self.action_plan[sensor] = dutycycleplan
-        	action = self.action_plan[sensor][t]
-        	this_t_action[sensor] = action
+            status, battery, diff,t = state
+            if t==0:
+                #new action plan for a new day
+                #first get the next 8 time steps harvested energy from the oracle
+                globalt = self.env.steps_taken
+                #print('total t', globalt, len(self.env.harvested_records[sensor]))
+                perday = self.env.num_ts
+                mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
+                next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
+                dutycycleplan = solve_eno(self.env.deltat, next_days_solar, mWhbattery)
+                self.action_plan[sensor] = dutycycleplan
+            action = self.action_plan[sensor][t]
+            this_t_action[sensor] = action
+            #print('action_plan: ', self.action_plan, action, this_t_action)
         return this_t_action
     def run(self, render=True):
         rewards = []
