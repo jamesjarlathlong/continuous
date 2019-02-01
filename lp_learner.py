@@ -77,18 +77,18 @@ class LPAgent(object):
         #find min active sensor
         this_t_action = {}
         for sensor, state in observation.items():
-        	status, battery, diff,t = state
-        	if t==0:
-        		#new action plan for a new day
-        		#first get the next 8 time steps harvested energy from the oracle
-        		globalt = self.env.steps_taken
-        		perday = self.env.num_ts
-        		mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
-        		next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
-        		dutycycleplan = solve_eno(self.env.deltat, next_days_solar, battery)
-        		self.action_plan[sensor] = dutycycleplan
-        	action = action_plan[sensor][t]
-        	this_t_action[sensor] = action
+            status, battery, diff,t = state
+            if t==0:
+                #new action plan for a new day
+                #first get the next 8 time steps harvested energy from the oracle
+                globalt = self.env.steps_taken
+                perday = self.env.num_ts
+                mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
+                next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
+                dutycycleplan = solve_eno(self.env.deltat, next_days_solar, battery)
+                self.action_plan[sensor] = dutycycleplan
+            action = self.action_plan[sensor][t]
+            this_t_action[sensor] = action
         return this_t_action
     def run(self, render=True):
         rewards = []
