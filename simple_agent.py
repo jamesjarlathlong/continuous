@@ -237,7 +237,7 @@ class SimpleThreeOptionAgent(object):
             wrapped_action = wrap_action(int(sleepingnum),0)#wakeup
         else:
             if battery<sleeping_batt:
-                action = 1 if battery>5 else 2
+                action = 1 if battery>0 else 2
                 wrapped_action = wrap_action(int(sensornum), action)#sleep
             else:
                 wrapped_action = wrap_action(int(sensornum),0) #noop as sensornum is in active set
@@ -295,7 +295,7 @@ class SimpleThreeOptionAgent(object):
             wrapped_action = wrap_action(int(sleepingnum),0)#wakeup
         else:
             if battery<sleeping_batt:
-                action = 1 if battery>0 else 2
+                action = 1# if battery>0 else 2
                 wrapped_action = wrap_action(int(sensornum), action)#sleep
             else:
                 wrapped_action = wrap_action(int(sensornum),0) #noop as sensornum is in active set
