@@ -54,7 +54,7 @@ def eno_status_dynamics(status, battery, action):
     #if action == 1:#go to sleep
     #    new_status =1#sleep
     #newstatus = action
-    return new_status
+    return status
 def what_is_noop(state):
     return state[0]
 def eno_get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, full_actions):
@@ -69,7 +69,8 @@ def eno_get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, fu
     new_state = multi_sensor_env.zip_4dicts(new_statuses, new_batteries, diffs, times)
     #new_state = multi_sensor_env.zip_3dicts(new_statuses, new_batteries, diffs)
     return new_state
-def simulate_whether_on(dutycycle, battery):
+def simulate_whether_on(state):
+    dutycycle, battery = state
     rollthedice = np.random.uniform()
     return (dutycycle>rollthedice) and (battery>0)
 def lp_reward(r_char, n, old_state, sensors):
@@ -159,6 +160,7 @@ class EnoSensorEnv(gym.Env):
         randomly_perturbed = {k:perturbed[idx]
                               for idx, k in enumerate(self.state)}
         self.harvested_records = randomly_perturbed
+        print(len(self.harvested_records['S0']))
         episode_battery_runners = {k:functools.partial(runner, v)
                                   for k,v in randomly_perturbed.items()}
         self.episode_battery_dynamics = {k: episode_battery_runner(eno_battery_dynamics)
