@@ -32,7 +32,7 @@ def calc_battery(energyseries, dutyseries, deltat, b_initial):
 def solve_eno(deltat,series, b_0):
     problem = pulp.LpProblem('ENO',pulp.LpMaximize)
     times = len(series)
-    duty_vars = pulp.LpVariable.dicts("D",[t for t in range(times)],0, 1,'Binary')
+    duty_vars = pulp.LpVariable.dicts("D",[t for t in range(times)],0, 1)
     capacity = 2000*3.7 #mAh*3.7V
     problem+=pulp.lpSum(duty_vars)
     #add constraints to ensure nonzero battery at all times
@@ -42,11 +42,18 @@ def solve_eno(deltat,series, b_0):
     #problem += (pulp.lpSum(b_i)<=capacity,'non max batt at t ={}'.format(i))
     #add constraint to ensure energy positive operation
     b_end = generate_constraint(deltat,b_0,series, duty_vars, times)
-    problem+=(pulp.lpSum(b_end)>=b_0,'battery at end must be greater than battery at start')
+    problem+=(pulp.lpSum(b_end)>=b_0,'battery at end must be greater than battery at start') 
+    #print('startbatt: ',b_0,'problem: ', problem)
     r = problem.solve()
-    assert r==1
-    vals = sorted([v for v in problem.variables()], key=lambda i:int(i.name.split('_')[1]))
-    dseries = [v.varValue for v in vals]
+    if r==1:
+        try:
+            vals = sorted([v for v in problem.variables()], key=lambda i:int(i.name.split('_')[1]))
+            dseries = [v.varValue for v in vals]
+        except:
+            print('uh oh', problem.variables(),series)
+    else:
+        print('no solution', b_0, series)
+        dseries = [0 for _ in range(times)]
     #batteryseries = calc_battery(series, dseries, deltat,b_0)
     return dseries
 
@@ -77,18 +84,19 @@ class LPAgent(object):
         #find min active sensor
         this_t_action = {}
         for sensor, state in observation.items():
-            status, battery, diff,t = state
-            if t==0:
-                #new action plan for a new day
-                #first get the next 8 time steps harvested energy from the oracle
-                globalt = self.env.steps_taken
-                perday = self.env.num_ts
-                mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
-                next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
-                dutycycleplan = solve_eno(self.env.deltat, next_days_solar, battery)
-                self.action_plan[sensor] = dutycycleplan
-            action = self.action_plan[sensor][t]
-            this_t_action[sensor] = action
+        	status, battery, diff,t = state
+        	if t==0:
+        		#new action plan for a new day
+        		#first get the next 8 time steps harvested energy from the oracle
+        		globalt = self.env.steps_taken
+                print('total t', globalt, len(self.env.harvested_records[sensor]))
+        		perday = self.env.num_ts
+        		mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
+        		next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
+        		dutycycleplan = solve_eno(self.env.deltat, next_days_solar, mWhbattery)
+        		self.action_plan[sensor] = dutycycleplan
+        	action = self.action_plan[sensor][t]
+        	this_t_action[sensor] = action
         return this_t_action
     def run(self, render=True):
         rewards = []
@@ -101,6 +109,7 @@ class LPAgent(object):
             #rewards = []
             while not done and i<self.env._max_episode_steps:
                 if render: self.env.render()
+                #print('observation', observation)
                 action = self.act(observation)
                 #print('observation:{}, action:{}'.format(observation, action))
                 observation, reward, done, info = self.env.step(action)
