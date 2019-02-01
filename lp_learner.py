@@ -47,8 +47,8 @@ def solve_eno(deltat,series, b_0):
     assert r==1
     vals = sorted([v for v in problem.variables()], key=lambda i:int(i.name.split('_')[1]))
     dseries = [v.varValue for v in vals]
-    batteryseries = calc_battery(series, dseries, deltat,b_0)
-    return batteryseries, dseries
+    #batteryseries = calc_battery(series, dseries, deltat,b_0)
+    return dseries
 
 def get_series(deltat, numdays, monthrecord, startday):
     deltat = 3
@@ -62,13 +62,12 @@ def get_series(deltat, numdays, monthrecord, startday):
 
 class LPAgent(object):
     """The world's simplest agent!"""
-    def __init__(self, env,n_episodes=1, max_env_steps = int(365*24/0.5), num_on=1):
+    def __init__(self, env,n_episodes=1, max_env_steps = int(365*24/0.5)):
         self.env = env
         self.n_episodes = n_episodes
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
         self.env.reset()
         self.full_record = []
-        self.num_on = num_on
         self.action_plan= {}
     def act(self, observation):
         #recharge if battery gets below 3 
@@ -86,7 +85,7 @@ class LPAgent(object):
         		perday = self.env.num_ts
         		mWhbattery = battery*self.env.battery_capacity/self.env.max_batt
         		next_days_solar = self.env.harvested_records[sensor][globalt:globalt+perday]
-        		_, dutycycleplan = solve_eno(self.env.deltat, next_days_solar, battery)
+        		dutycycleplan = solve_eno(self.env.deltat, next_days_solar, battery)
         		self.action_plan[sensor] = dutycycleplan
         	action = action_plan[sensor][t]
         	this_t_action[sensor] = action
