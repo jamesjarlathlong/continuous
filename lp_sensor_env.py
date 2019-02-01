@@ -54,7 +54,7 @@ def eno_status_dynamics(status, battery, action):
     #if action == 1:#go to sleep
     #    new_status =1#sleep
     #newstatus = action
-    return new_status
+    return status
 def what_is_noop(state):
     return state[0]
 def eno_get_new_state(batt_funs, battery_capacity, max_batt,max_t, old_state, full_actions):
