@@ -338,13 +338,13 @@ class SimpleEnoAgent(object):
         #print(active_sensors, observation)
         #find min active sensor
         sensors = [k for k in observation]
-        non50_sensor = [(k,v) for k,v in observation.items()
+        non50_sensor = [k for k,v in observation.items()
                             if v[0]!=5]
         sensor = non50_sensor[0] if non50_sensor else sensors[0]#active_sensors[0]
         sensorname, sensornum = sensor[0], sensor[1::]
         status, battery, diff,t = observation[sensor]
         #find max idle sensor
-        action = 5 if battery>0 else 0
+        action = 0 if t in [5,6,7,0] else 10
         wrapped_action = wrap_action(int(sensornum), action)#sleep
         return wrapped_action
     def run(self, render=True):
