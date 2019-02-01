@@ -340,7 +340,7 @@ class SimpleEnoAgent(object):
         sensors = [k for k in observation]
         non50_sensor = [k for k,v in observation.items()
                             if v[0]!=5]
-        sensor = non50_sensor[0] if non50_sensor else sensors[0]#active_sensors[0]
+        sensor = non50_sensor[0][0] if non50_sensor else sensors[0]#active_sensors[0]
         sensorname, sensornum = sensor[0], sensor[1::]
         status, battery, diff,t = observation[sensor]
         #find max idle sensor
